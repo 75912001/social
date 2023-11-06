@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package social_service;
+
+option go_package = "proto/social_service";
+
+service SocialService {
+  rpc BidirectionalStreamingMethod (stream CommonRequest) returns (stream CommonResponse);
+}
+
+message RegisterRequest {//注册
+  ServiceKey serviceKey = 1;
+}
+message RegisterResponse {
+  string field1 = 1;
+}
+
+message LogoutRequest {//注销
+  ServiceKey serviceKey = 1;
+}
+message LogoutResponse {
+  uint32 field2 = 1;
+}
+
+message CommonRequest {
+  oneof request {
+    RegisterRequest registerRequest = 1;
+    LogoutRequest logoutRequest = 2;
+  }
+}
+
+message CommonResponse {
+  oneof response {
+    RegisterResponse registerResponse = 1;
+    LogoutResponse logoutResponse = 2;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+message ServiceKey{
+  uint32 zoneID = 1;//区域ID
+  string serviceName = 2;//服务名称
+  uint32 serviceID = 3;//服务ID
+}
