@@ -14,7 +14,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("err:%s", err)
+		}
+	}()
 
 	client := social_service.NewSocialServiceClient(conn)
 
