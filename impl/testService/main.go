@@ -5,7 +5,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"social/proto/social_service"
+	"social/impl/protobuf/proto/social_service"
 )
 
 type socialServer struct {

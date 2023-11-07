@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
-	"social/proto/social_service"
+	"social/impl/protobuf/proto/social_service"
 )
 
 func main() {
