@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.0
-// source: impl/protobuf/social/social.proto
+// source: social/social.proto
 
 package social_service
 
@@ -137,5 +137,5 @@ var SocialService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "impl/protobuf/social/social.proto",
+	Metadata: "social/social.proto",
 }
