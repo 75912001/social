@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package social.gate;
+
+option go_package = "../../pkg/proto/gate";
+
+import "message.proto";
+
+service Service {
+  rpc BidirectionalStreamingMethod (stream Request) returns (stream Response);
+}
+
+message Request {
+  oneof request {
+    RegisterReq registerReq = 1;
+    LogoutReq logoutReq = 2;
+  }
+}
+message Response {
+  oneof response {
+    RegisterRes registerRes = 1;
+    LogoutRes logoutRes = 2;
+  }
+}
+
+

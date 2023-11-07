@@ -9,6 +9,20 @@ import (
 )
 
 func main() {
+	// 获取包括程序名称的运行路径
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("无法获取可执行文件路径:", err)
+		return
+	}
+
+	// 使用 filepath 包获取所在目录
+	exeDir := filepath.Dir(exePath)
+	exeName := filepath.Base(exePath)
+
+	fmt.Println("程序名称:", exeName)
+	fmt.Println("程序运行路径:", exeDir)
+
 	// 连接 gRPC 服务器
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {

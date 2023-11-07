@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package social.gate;
+
+option go_package = "../../pkg/proto/gate";
+
+message RegisterReq { //注册请求 user->gate
+  ServiceKey serviceKey = 1;
+}
+message RegisterRes { //注册响应 gate->user
+}
+
+message LogoutReq { //注销请求 user->gate
+  ServiceKey serviceKey = 1;
+}
+message LogoutRes { //注销响应 gate->user
+}
+
+message ServiceKey{ //服务key
+  uint32 zoneID = 1;//区域ID
+  string serviceName = 2;//服务名称
+  uint32 serviceID = 3;//服务ID
+}
