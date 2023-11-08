@@ -12,7 +12,7 @@
 > 
 > 在gate中创建管理器, 管理 friend system
 > 
-> 沟通, 该社交系统为独立系统, 和LP解耦. 提供社交系统服务.
+
 
 项目初始化
 
@@ -43,12 +43,6 @@ windows
 由*.proto文件生成代码
     
     运行 social/scripts/proto/gen.sh
-
-    protoc --go_out=. --go-grpc_out=. ./impl/protobuf/social/social.proto
-    生成两个文件,一个用于普通的 Protocol Buffers,一个用于 gRPC
-    相关路径定义在*.proto文件中
-    如:option go_package = "proto/test";
-
 
 # 目录说明
 

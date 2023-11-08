@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"log"
 	"social/pkg/common"
 	xrerror "social/pkg/lib/error"
@@ -90,8 +91,34 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalS
 				return err
 			}
 		default:
+
 			log.Fatalln(xrerror.MessageIDNonExistent, xrutil.GetCodeLocation(1))
 			return nil
+		}
+	}
+}
+
+func (s *Server) ForwardBinaryData(stream gate.Service_ForwardBinaryDataServer) error {
+	for {
+		data, err := stream.Recv()
+		if err == io.EOF {
+			// 客户端关闭流，结束循环
+			return nil
+		}
+		if err != nil {
+			log.Printf("Error receiving data: %v", err)
+			return err
+		}
+
+		// 在这里可以根据需要处理接收到的二进制数据
+		// 在本示例中，我们将接收到的数据直接打印出来
+		log.Printf("Received binary data: %v", data.Data)
+
+		// 在这里可以根据需要处理数据，然后将数据发送回客户端
+		// 在本示例中，我们将接收到的数据原样发送回客户端
+		if err := stream.Send(data); err != nil {
+			log.Printf("Error sending data: %v", err)
+			return err
 		}
 	}
 }

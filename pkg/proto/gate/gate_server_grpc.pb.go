@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.0
-// source: server.proto
+// source: gate_server.proto
 
 package gate
 
@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Service_BidirectionalStreamingMethod_FullMethodName = "/social.gate.Service/BidirectionalStreamingMethod"
+	Service_BidirectionalStreamingMethod_FullMethodName = "/Service/BidirectionalStreamingMethod"
+	Service_ForwardBinaryData_FullMethodName            = "/Service/ForwardBinaryData"
 )
 
 // ServiceClient is the client API for Service service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceClient interface {
 	BidirectionalStreamingMethod(ctx context.Context, opts ...grpc.CallOption) (Service_BidirectionalStreamingMethodClient, error)
+	ForwardBinaryData(ctx context.Context, opts ...grpc.CallOption) (Service_ForwardBinaryDataClient, error)
 }
 
 type serviceClient struct {
@@ -68,11 +70,43 @@ func (x *serviceBidirectionalStreamingMethodClient) Recv() (*Response, error) {
 	return m, nil
 }
 
+func (c *serviceClient) ForwardBinaryData(ctx context.Context, opts ...grpc.CallOption) (Service_ForwardBinaryDataClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[1], Service_ForwardBinaryData_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &serviceForwardBinaryDataClient{stream}
+	return x, nil
+}
+
+type Service_ForwardBinaryDataClient interface {
+	Send(*BinaryData) error
+	Recv() (*BinaryData, error)
+	grpc.ClientStream
+}
+
+type serviceForwardBinaryDataClient struct {
+	grpc.ClientStream
+}
+
+func (x *serviceForwardBinaryDataClient) Send(m *BinaryData) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *serviceForwardBinaryDataClient) Recv() (*BinaryData, error) {
+	m := new(BinaryData)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ServiceServer is the server API for Service service.
 // All implementations must embed UnimplementedServiceServer
 // for forward compatibility
 type ServiceServer interface {
 	BidirectionalStreamingMethod(Service_BidirectionalStreamingMethodServer) error
+	ForwardBinaryData(Service_ForwardBinaryDataServer) error
 	mustEmbedUnimplementedServiceServer()
 }
 
@@ -82,6 +116,9 @@ type UnimplementedServiceServer struct {
 
 func (UnimplementedServiceServer) BidirectionalStreamingMethod(Service_BidirectionalStreamingMethodServer) error {
 	return status.Errorf(codes.Unimplemented, "method BidirectionalStreamingMethod not implemented")
+}
+func (UnimplementedServiceServer) ForwardBinaryData(Service_ForwardBinaryDataServer) error {
+	return status.Errorf(codes.Unimplemented, "method ForwardBinaryData not implemented")
 }
 func (UnimplementedServiceServer) mustEmbedUnimplementedServiceServer() {}
 
@@ -122,11 +159,37 @@ func (x *serviceBidirectionalStreamingMethodServer) Recv() (*Request, error) {
 	return m, nil
 }
 
+func _Service_ForwardBinaryData_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ServiceServer).ForwardBinaryData(&serviceForwardBinaryDataServer{stream})
+}
+
+type Service_ForwardBinaryDataServer interface {
+	Send(*BinaryData) error
+	Recv() (*BinaryData, error)
+	grpc.ServerStream
+}
+
+type serviceForwardBinaryDataServer struct {
+	grpc.ServerStream
+}
+
+func (x *serviceForwardBinaryDataServer) Send(m *BinaryData) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *serviceForwardBinaryDataServer) Recv() (*BinaryData, error) {
+	m := new(BinaryData)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Service_ServiceDesc is the grpc.ServiceDesc for Service service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Service_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "social.gate.Service",
+	ServiceName: "Service",
 	HandlerType: (*ServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
@@ -136,6 +199,12 @@ var Service_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 			ClientStreams: true,
 		},
+		{
+			StreamName:    "ForwardBinaryData",
+			Handler:       _Service_ForwardBinaryData_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
 	},
-	Metadata: "server.proto",
+	Metadata: "gate_server.proto",
 }

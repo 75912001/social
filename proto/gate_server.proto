@@ -1,13 +1,11 @@
 syntax = "proto3";
 
-package social.gate;
+option go_package = "social/pkg/proto/gate";
 
-option go_package = "../../pkg/proto/gate";
-
-import "message.proto";
+import "gate_message.proto";
 
 service Service {
-  rpc BidirectionalStreamingMethod (stream Request) returns (stream Response);
+  rpc BidirectionalBinaryData(stream BinaryData) returns (stream BinaryData);
 }
 
 message Request {
@@ -23,4 +21,7 @@ message Response {
   }
 }
 
+message BinaryData {
+  bytes data = 1;
+}
 

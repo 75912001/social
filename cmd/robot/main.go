@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
+	"os"
+	"path/filepath"
 	"social/impl/protobuf/proto/social_service"
 )
 
+// TODO
 func main() {
 	// 获取包括程序名称的运行路径
 	exePath, err := os.Executable()
