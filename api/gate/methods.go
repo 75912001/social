@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -12,7 +13,7 @@ import (
 	"social/pkg/proto/gate"
 )
 
-func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalStreamingMethodServer) error {
+func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalBinaryDataServer) error {
 	for {
 		request, err := stream.Recv()
 		if err != nil {
@@ -52,49 +53,53 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalS
 			}
 			return err
 		}
+		{ //获取数据-二进制
+			b := request.GetData()
 
-		// 根据请求类型选择处理逻辑
-		switch req := request.GetRequest().(type) {
-		case *gate.Request_RegisterReq:
-			log.Println("Received Request_RegisterReq:", req.RegisterReq.GetServiceKey())
-			// 处理 RegisterReq 并生成响应
-			res := &gate.Response{
-				Response: &gate.Response_RegisterRes{
-					RegisterRes: &gate.RegisterRes{},
-				},
-			}
-			err = common.GetGrpcStreamMgrInstance().Add(req.RegisterReq.GetServiceKey().GetServiceID(), stream)
-			if err != nil {
-				log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-				return err
-			}
-			if err = stream.Send(res); err != nil {
-				log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-				return err
-			}
-		case *gate.Request_LogoutReq:
-			log.Println("Received Request_LogoutReq:", req.LogoutReq.GetServiceKey())
-			// 处理 RequestTypeB 并生成响应
-			response := &gate.Response{
-				Response: &gate.Response_LogoutRes{
-					LogoutRes: &gate.LogoutRes{},
-				},
-			}
-			//删除client
-			err = common.GetGrpcStreamMgrInstance().Del(stream)
-			if err != nil {
-				log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-				return err
-			}
-			if err = stream.Send(response); err != nil {
-				log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-				return err
-			}
-		default:
-
-			log.Fatalln(xrerror.MessageIDNonExistent, xrutil.GetCodeLocation(1))
-			return nil
+			proto.Unmarshal(b, gate.)
 		}
+		//// 根据请求类型选择处理逻辑
+		//switch req := request.GetData().(type) {
+		//case *gate.Request_RegisterReq:
+		//	log.Println("Received Request_RegisterReq:", req.RegisterReq.GetServiceKey())
+		//	// 处理 RegisterReq 并生成响应
+		//	res := &gate.Response{
+		//		Response: &gate.Response_RegisterRes{
+		//			RegisterRes: &gate.RegisterRes{},
+		//		},
+		//	}
+		//	err = common.GetGrpcStreamMgrInstance().Add(req.RegisterReq.GetServiceKey().GetServiceID(), stream)
+		//	if err != nil {
+		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
+		//		return err
+		//	}
+		//	if err = stream.Send(res); err != nil {
+		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
+		//		return err
+		//	}
+		//case *gate.Request_LogoutReq:
+		//	log.Println("Received Request_LogoutReq:", req.LogoutReq.GetServiceKey())
+		//	// 处理 RequestTypeB 并生成响应
+		//	response := &gate.Response{
+		//		Response: &gate.Response_LogoutRes{
+		//			LogoutRes: &gate.LogoutRes{},
+		//		},
+		//	}
+		//	//删除client
+		//	err = common.GetGrpcStreamMgrInstance().Del(stream)
+		//	if err != nil {
+		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
+		//		return err
+		//	}
+		//	if err = stream.Send(response); err != nil {
+		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
+		//		return err
+		//	}
+		//default:
+		//
+		//	log.Fatalln(xrerror.MessageIDNonExistent, xrutil.GetCodeLocation(1))
+		//	return nil
+		//}
 	}
 }
 

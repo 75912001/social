@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "social/pkg/proto"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,16 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Service_BidirectionalStreamingMethod_FullMethodName = "/Service/BidirectionalStreamingMethod"
-	Service_ForwardBinaryData_FullMethodName            = "/Service/ForwardBinaryData"
+	Service_BidirectionalBinaryData_FullMethodName = "/Service/BidirectionalBinaryData"
 )
 
 // ServiceClient is the client API for Service service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceClient interface {
-	BidirectionalStreamingMethod(ctx context.Context, opts ...grpc.CallOption) (Service_BidirectionalStreamingMethodClient, error)
-	ForwardBinaryData(ctx context.Context, opts ...grpc.CallOption) (Service_ForwardBinaryDataClient, error)
+	BidirectionalBinaryData(ctx context.Context, opts ...grpc.CallOption) (Service_BidirectionalBinaryDataClient, error)
 }
 
 type serviceClient struct {
@@ -39,62 +38,31 @@ func NewServiceClient(cc grpc.ClientConnInterface) ServiceClient {
 	return &serviceClient{cc}
 }
 
-func (c *serviceClient) BidirectionalStreamingMethod(ctx context.Context, opts ...grpc.CallOption) (Service_BidirectionalStreamingMethodClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[0], Service_BidirectionalStreamingMethod_FullMethodName, opts...)
+func (c *serviceClient) BidirectionalBinaryData(ctx context.Context, opts ...grpc.CallOption) (Service_BidirectionalBinaryDataClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[0], Service_BidirectionalBinaryData_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &serviceBidirectionalStreamingMethodClient{stream}
+	x := &serviceBidirectionalBinaryDataClient{stream}
 	return x, nil
 }
 
-type Service_BidirectionalStreamingMethodClient interface {
-	Send(*Request) error
-	Recv() (*Response, error)
+type Service_BidirectionalBinaryDataClient interface {
+	Send(*proto.BinaryData) error
+	Recv() (*proto.BinaryData, error)
 	grpc.ClientStream
 }
 
-type serviceBidirectionalStreamingMethodClient struct {
+type serviceBidirectionalBinaryDataClient struct {
 	grpc.ClientStream
 }
 
-func (x *serviceBidirectionalStreamingMethodClient) Send(m *Request) error {
+func (x *serviceBidirectionalBinaryDataClient) Send(m *proto.BinaryData) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *serviceBidirectionalStreamingMethodClient) Recv() (*Response, error) {
-	m := new(Response)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *serviceClient) ForwardBinaryData(ctx context.Context, opts ...grpc.CallOption) (Service_ForwardBinaryDataClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[1], Service_ForwardBinaryData_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &serviceForwardBinaryDataClient{stream}
-	return x, nil
-}
-
-type Service_ForwardBinaryDataClient interface {
-	Send(*BinaryData) error
-	Recv() (*BinaryData, error)
-	grpc.ClientStream
-}
-
-type serviceForwardBinaryDataClient struct {
-	grpc.ClientStream
-}
-
-func (x *serviceForwardBinaryDataClient) Send(m *BinaryData) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *serviceForwardBinaryDataClient) Recv() (*BinaryData, error) {
-	m := new(BinaryData)
+func (x *serviceBidirectionalBinaryDataClient) Recv() (*proto.BinaryData, error) {
+	m := new(proto.BinaryData)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -105,8 +73,7 @@ func (x *serviceForwardBinaryDataClient) Recv() (*BinaryData, error) {
 // All implementations must embed UnimplementedServiceServer
 // for forward compatibility
 type ServiceServer interface {
-	BidirectionalStreamingMethod(Service_BidirectionalStreamingMethodServer) error
-	ForwardBinaryData(Service_ForwardBinaryDataServer) error
+	BidirectionalBinaryData(Service_BidirectionalBinaryDataServer) error
 	mustEmbedUnimplementedServiceServer()
 }
 
@@ -114,11 +81,8 @@ type ServiceServer interface {
 type UnimplementedServiceServer struct {
 }
 
-func (UnimplementedServiceServer) BidirectionalStreamingMethod(Service_BidirectionalStreamingMethodServer) error {
-	return status.Errorf(codes.Unimplemented, "method BidirectionalStreamingMethod not implemented")
-}
-func (UnimplementedServiceServer) ForwardBinaryData(Service_ForwardBinaryDataServer) error {
-	return status.Errorf(codes.Unimplemented, "method ForwardBinaryData not implemented")
+func (UnimplementedServiceServer) BidirectionalBinaryData(Service_BidirectionalBinaryDataServer) error {
+	return status.Errorf(codes.Unimplemented, "method BidirectionalBinaryData not implemented")
 }
 func (UnimplementedServiceServer) mustEmbedUnimplementedServiceServer() {}
 
@@ -133,52 +97,26 @@ func RegisterServiceServer(s grpc.ServiceRegistrar, srv ServiceServer) {
 	s.RegisterService(&Service_ServiceDesc, srv)
 }
 
-func _Service_BidirectionalStreamingMethod_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ServiceServer).BidirectionalStreamingMethod(&serviceBidirectionalStreamingMethodServer{stream})
+func _Service_BidirectionalBinaryData_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ServiceServer).BidirectionalBinaryData(&serviceBidirectionalBinaryDataServer{stream})
 }
 
-type Service_BidirectionalStreamingMethodServer interface {
-	Send(*Response) error
-	Recv() (*Request, error)
+type Service_BidirectionalBinaryDataServer interface {
+	Send(*proto.BinaryData) error
+	Recv() (*proto.BinaryData, error)
 	grpc.ServerStream
 }
 
-type serviceBidirectionalStreamingMethodServer struct {
+type serviceBidirectionalBinaryDataServer struct {
 	grpc.ServerStream
 }
 
-func (x *serviceBidirectionalStreamingMethodServer) Send(m *Response) error {
+func (x *serviceBidirectionalBinaryDataServer) Send(m *proto.BinaryData) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *serviceBidirectionalStreamingMethodServer) Recv() (*Request, error) {
-	m := new(Request)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _Service_ForwardBinaryData_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ServiceServer).ForwardBinaryData(&serviceForwardBinaryDataServer{stream})
-}
-
-type Service_ForwardBinaryDataServer interface {
-	Send(*BinaryData) error
-	Recv() (*BinaryData, error)
-	grpc.ServerStream
-}
-
-type serviceForwardBinaryDataServer struct {
-	grpc.ServerStream
-}
-
-func (x *serviceForwardBinaryDataServer) Send(m *BinaryData) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *serviceForwardBinaryDataServer) Recv() (*BinaryData, error) {
-	m := new(BinaryData)
+func (x *serviceBidirectionalBinaryDataServer) Recv() (*proto.BinaryData, error) {
+	m := new(proto.BinaryData)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -194,14 +132,8 @@ var Service_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "BidirectionalStreamingMethod",
-			Handler:       _Service_BidirectionalStreamingMethod_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "ForwardBinaryData",
-			Handler:       _Service_ForwardBinaryData_Handler,
+			StreamName:    "BidirectionalBinaryData",
+			Handler:       _Service_BidirectionalBinaryData_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

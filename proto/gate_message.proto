@@ -15,10 +15,3 @@ message LogoutReq { //注销请求 user->gate
 }
 message LogoutRes { //注销响应 gate->user
 }
-
-//message ServiceKey{ //服务key
-//  uint32 zoneID = 1;//区域ID
-//  string serviceName = 2;//服务名称
-//  uint32 serviceID = 3;//服务ID
-//}
-
