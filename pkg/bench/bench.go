@@ -9,6 +9,7 @@ import (
 	xrerror "social/pkg/lib/error"
 	xrlog "social/pkg/lib/log"
 	xrutil "social/pkg/lib/util"
+	"social/pkg/server"
 	"time"
 )
 
@@ -105,7 +106,9 @@ func (p *Mgr) Parse(pathFile string) error {
 		p.Json.Etcd.TTL = common.EtcdTtlSecondDefault
 	}
 	if len(p.Json.Etcd.Key) == 0 {
-		//todo menglingchao
+		p.Json.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
+			common.ProjectName, common.EtcdWatchMsgTypeService,
+			server.GMgr.ZoneID, server.GMgr.ServiceName, server.GMgr.ServiceID)
 	}
 	if len(p.Json.Etcd.Value.ServiceNetTCP.IP) == 0 {
 		p.Json.Etcd.Value.ServiceNetTCP.IP = p.Json.Server.IP
