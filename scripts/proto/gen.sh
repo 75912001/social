@@ -5,6 +5,7 @@
 #生成 协议
 cd ../../proto
 protoc --go_out=../../ message.proto
+protoc --go_out=../../ common.proto
 
 #gate
 protoc --go_out=../../ gate_message.proto
