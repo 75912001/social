@@ -14,9 +14,10 @@ type Options struct {
 	Path                   *string // 路径
 	BenchPath              *string // 配置文件路径
 	SubBench               bench.ISubBench
-	EtcdHandler            xretcd.OnFunc // etcd 处理函数
-	EtcdWatchServicePrefix *string       // etcd 关注 服务 前缀
-	EtcdWatchCommandPrefix *string       // etcd 关注 命令 前缀
+	DefaultHandler         OnDefaultHandler // default 处理函数
+	EtcdHandler            xretcd.OnFunc    // etcd 处理函数
+	EtcdWatchServicePrefix *string          // etcd 关注 服务 前缀
+	EtcdWatchCommandPrefix *string          // etcd 关注 命令 前缀
 }
 
 // NewOptions 新的Options
@@ -27,6 +28,11 @@ func NewOptions() *Options {
 
 func (p *Options) SetSubBench(subBench bench.ISubBench) *Options {
 	p.SubBench = subBench
+	return p
+}
+
+func (p *Options) SetDefaultHandler(defaultHandler OnDefaultHandler) *Options {
+	p.DefaultHandler = defaultHandler
 	return p
 }
 
@@ -59,6 +65,9 @@ func mergeOptions(opts ...*Options) *Options {
 		}
 		if opt.SubBench != nil {
 			so.SubBench = opt.SubBench
+		}
+		if opt.DefaultHandler != nil {
+			so.DefaultHandler = opt.DefaultHandler
 		}
 		if opt.EtcdHandler != nil {
 			so.EtcdHandler = opt.EtcdHandler
