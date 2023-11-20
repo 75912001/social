@@ -59,7 +59,7 @@ type Etcd struct {
 type EtcdValueJson struct {
 	ServiceNetTCP ServiceNetJson `json:"serviceNetTCP,omitempty"` //有:直接使用. 没有:使用 server 属性生成ip, port
 	Version       string         `json:"version,omitempty"`       //有:直接使用. 没有:使用 base.version 生成
-	AvailableLoad uint32         `json:"availableLoad,omitempty"` //可用负载, 可用资源数 [默认为 common.BenchJsonAvailableLoadMaxDefault]
+	AvailableLoad uint32         `json:"availableLoad,omitempty"` //可用负载, 可用资源数
 }
 
 // ServiceNetJson 服务 网络 接口
