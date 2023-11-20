@@ -28,12 +28,13 @@ type benchJson struct {
 }
 
 type Base struct {
-	Version       string         `json:"version"`
-	PprofHttpPort uint32         `json:"pprofHttpPort"` //pprof性能分析 http端口 default:0 不使用
-	LogLevel      int            `json:"logLevel"`      //日志等级 default:7
-	LogAbsPath    string         `json:"logAbsPath"`    //日志绝对路径 default:/data/xxx/log
-	GoMaxProcess  int            `json:"goMaxProcess"`  //default:runtime.NumCPU()
-	RunMode       xrutil.RunMode `json:"runMode"`       //运行模式 0:release 1:debug default:0,release
+	Version          string         `json:"version"`
+	PprofHttpPort    uint32         `json:"pprofHttpPort"`    //pprof性能分析 http端口 default:0 不使用
+	LogLevel         int            `json:"logLevel"`         //日志等级 default:7
+	LogAbsPath       string         `json:"logAbsPath"`       //日志绝对路径 default:/data/xxx/log
+	GoMaxProcess     int            `json:"goMaxProcess"`     //default:runtime.NumCPU()
+	BusChannelNumber uint32         `json:"busChannelNumber"` //事件chan数量. default:1000000 大约占用15.6MB
+	RunMode          xrutil.RunMode `json:"runMode"`          //运行模式 0:release 1:debug default:0,release
 }
 
 type Server struct {
@@ -86,6 +87,10 @@ func (p *Mgr) Parse(pathFile string) error {
 	}
 	if len(p.Json.Base.LogAbsPath) == 0 {
 		p.Json.Base.LogAbsPath = common.LogAbsPath
+	}
+	if 0 == p.Json.Base.BusChannelNumber {
+		//1000000 大约占用15.6MB
+		p.Json.Base.BusChannelNumber = 1000000
 	}
 	if 0 == p.Json.Base.GoMaxProcess {
 		p.Json.Base.GoMaxProcess = runtime.NumCPU()
