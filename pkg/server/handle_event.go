@@ -13,8 +13,8 @@ func (p *mgr) HandleBus() {
 	// 在消费eventChan时可能会往eventChan中写入事件,所以关闭服务时不能close eventChan(造成写入阻塞),通过定时检查eventChan大小来关闭
 	for {
 		select {
-		case <-GBusChannelCheckChan:
-			xrlog.GetInstance().Warn("receive GBusChannelCheckChan")
+		case <-p.checkBusChan:
+			xrlog.GetInstance().Warn("receive GCheckBusChan")
 			if 0 == len(p.BusChannel) && p.IsStopping() {
 				xrlog.GetInstance().Warn("server is stopping, stop consume GEventChan with length 0")
 				return
