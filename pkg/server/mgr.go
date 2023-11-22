@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"path"
 	"runtime"
+	"runtime/debug"
 	"social/pkg/bench"
 	"social/pkg/common"
 	"social/pkg/error_code"
@@ -173,9 +174,22 @@ func (p *mgr) PostInit(ctx context.Context, opts ...*Options) error {
 			return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
 		}
 	}
-
+	serviceInformationPrintingStart()
 	runtime.GC()
 	return nil
+}
+
+func serviceInformationPrintingStart() {
+	xrtimer.GetInstance().AddSecond(serviceInformationPrinting, nil, GetInstance().TimeMgr.ShadowTimeSecond()+ServiceInfoTimeOutSec)
+}
+
+// 服务信息 打印
+func serviceInformationPrinting(_ interface{}) {
+	s := debug.GCStats{}
+	debug.ReadGCStats(&s)
+	xrlog.GetInstance().Infof("goroutineCnt:%d, BusChannel:%d, numGC:%d, lastGC:%v, GCPauseTotal:%v",
+		runtime.NumGoroutine(), len(GetInstance().BusChannel), s.NumGC, s.LastGC, s.PauseTotal)
+	serviceInformationPrintingStart()
 }
 
 func (p *mgr) Stop() error {
