@@ -153,7 +153,7 @@ func (p *mgr) PostInit(ctx context.Context, opts ...*Options) error {
 	}
 	// 启动Etcd
 	bench.GetInstance().Etcd.Key = fmt.Sprintf("/%v/%v/%v/%v/%v",
-		common.ProjectName, common.EtcdWatchMsgTypeService, p.ZoneID, p.ServiceName, p.ServiceID)
+		common.ProjectName, etcd.WatchMsgTypeService, p.ZoneID, p.ServiceName, p.ServiceID)
 	err = etcd.Start(&bench.GetInstance().Etcd, p.BusChannel, p.Opt.EtcdHandler)
 	if err != nil {
 		return errors.Errorf("Etcd start err:%v %v", err, xrutil.GetCodeLocation(1).String())
