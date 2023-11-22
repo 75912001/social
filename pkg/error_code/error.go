@@ -4,6 +4,6 @@ package error_code
 import xrerror "social/pkg/lib/error"
 
 var (
-	EC_SUCCESS              = &xrerror.Error{Code: 0x0000, Name: "EC_SUCCESS", Desc: "成功"}
-	EC_ACCOUNT_NON_EXISTENT = &xrerror.Error{Code: 0x1001, Name: "EC_ACCOUNT_NON_EXISTENT", Desc: "账号不存在"}
+	EC_Succe              = &xrerror.Error{Code: 0x0000, Name: "EC_Succe", Desc: "成功"}
+	EC_AccountNonexitence = &xrerror.Error{Code: 0x1001, Name: "EC_AccountNonexitence", Desc: "账号不存在"}
 )
