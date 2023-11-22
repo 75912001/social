@@ -8,6 +8,8 @@ import (
 	xrutil "social/pkg/lib/util"
 )
 
+type OnDefaultHandler func(v interface{}) error
+
 // Options contains options to configure a server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type Options struct {
