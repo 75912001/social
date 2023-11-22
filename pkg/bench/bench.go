@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"runtime"
 	"social/pkg/common"
+	"social/pkg/etcd"
 	xrerror "social/pkg/lib/error"
 	xrlog "social/pkg/lib/log"
 	xrutil "social/pkg/lib/util"
@@ -118,11 +119,11 @@ func (p *mgr) Parse(pathFile string) error {
 		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
 	}
 	if p.Etcd.TTL == 0 {
-		p.Etcd.TTL = common.EtcdTtlSecondDefault
+		p.Etcd.TTL = etcd.TtlSecondDefault
 	}
 	if len(p.Etcd.Key) == 0 {
 		p.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
-			common.ProjectName, common.EtcdWatchMsgTypeService,
+			common.ProjectName, etcd.WatchMsgTypeService,
 			server.GetInstance().ZoneID, server.GetInstance().ServiceName, server.GetInstance().ServiceID)
 	}
 	if len(p.Etcd.Value.ServiceNetTCP.IP) == 0 {
