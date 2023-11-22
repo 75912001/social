@@ -14,14 +14,14 @@ import (
 )
 
 var (
-	instance *Mgr
+	instance *mgr
 	once     sync.Once
 )
 
 // GetInstance 获取
-func GetInstance() *Mgr {
+func GetInstance() *mgr {
 	once.Do(func() {
-		instance = new(Mgr)
+		instance = new(mgr)
 	})
 	return instance
 }
@@ -34,8 +34,8 @@ func IsEnable() bool {
 	return instance.client != nil
 }
 
-// Mgr 管理器
-type Mgr struct {
+// mgr 管理器
+type mgr struct {
 	client                        *clientv3.Client
 	kv                            clientv3.KV
 	lease                         clientv3.Lease
@@ -49,12 +49,12 @@ type Mgr struct {
 }
 
 // Handler etcd 处理数据
-func (p *Mgr) Handler(key string, val string) error {
+func (p *mgr) Handler(key string, val string) error {
 	return p.options.onFunc(key, val)
 }
 
 // Start 开始
-func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
+func (p *mgr) Start(_ context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	err := configure(p.options)
 	if err != nil {
@@ -93,7 +93,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
 }
 
 // Stop 停止
-func (p *Mgr) Stop() error {
+func (p *mgr) Stop() error {
 	if p.client != nil { // 删除
 		for _, v := range p.options.kvSlice {
 			_, err := p.DelWithPrefix(v.Key)
@@ -119,12 +119,12 @@ func (p *Mgr) Stop() error {
 	return nil
 }
 
-func (p *Mgr) getLeaseKeepAliveResponseChannel() <-chan *clientv3.LeaseKeepAliveResponse {
+func (p *mgr) getLeaseKeepAliveResponseChannel() <-chan *clientv3.LeaseKeepAliveResponse {
 	return p.leaseKeepAliveResponseChannel
 }
 
 // 多次重试 Start 和 KeepAlive
-func (p *Mgr) retryKeepAlive(ctx context.Context) error {
+func (p *mgr) retryKeepAlive(ctx context.Context) error {
 	xrlog.PrintfErr("renewing etcd lease, reconfiguring.grantLeaseMaxRetries:%v, grantLeaseIntervalSecond:%v",
 		*p.options.grantLeaseMaxRetries, grantLeaseRetryDuration/time.Second)
 	var failedGrantLeaseAttempts = 0
@@ -157,7 +157,7 @@ func (p *Mgr) retryKeepAlive(ctx context.Context) error {
 }
 
 // KeepAlive 更新租约
-func (p *Mgr) KeepAlive(ctx context.Context) error {
+func (p *mgr) KeepAlive(ctx context.Context) error {
 	var err error
 	p.leaseKeepAliveResponseChannel, err = p.lease.KeepAlive(ctx, p.leaseGrantResponse.ID)
 	if err != nil {
@@ -221,7 +221,7 @@ func (p *Mgr) KeepAlive(ctx context.Context) error {
 }
 
 // PutWithLease 将一个键值对放入etcd中 WithLease 带ttl
-func (p *Mgr) PutWithLease(key string, value string) (*clientv3.PutResponse, error) {
+func (p *mgr) PutWithLease(key string, value string) (*clientv3.PutResponse, error) {
 	putResponse, err := p.kv.Put(context.TODO(), key, value, clientv3.WithLease(p.leaseGrantResponse.ID))
 	if err != nil {
 		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -230,7 +230,7 @@ func (p *Mgr) PutWithLease(key string, value string) (*clientv3.PutResponse, err
 }
 
 // Put 将一个键值对放入etcd中
-func (p *Mgr) Put(key string, value string) (*clientv3.PutResponse, error) {
+func (p *mgr) Put(key string, value string) (*clientv3.PutResponse, error) {
 	putResponse, err := p.kv.Put(context.TODO(), key, value)
 	if err != nil {
 		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -239,7 +239,7 @@ func (p *Mgr) Put(key string, value string) (*clientv3.PutResponse, error) {
 }
 
 // DelWithPrefix 删除键值 匹配的键值
-func (p *Mgr) DelWithPrefix(keyPrefix string) (*clientv3.DeleteResponse, error) {
+func (p *mgr) DelWithPrefix(keyPrefix string) (*clientv3.DeleteResponse, error) {
 	deleteResponse, err := p.kv.Delete(context.TODO(), keyPrefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -248,7 +248,7 @@ func (p *Mgr) DelWithPrefix(keyPrefix string) (*clientv3.DeleteResponse, error) 
 }
 
 // Del 删除键值
-func (p *Mgr) Del(key string) (*clientv3.DeleteResponse, error) {
+func (p *mgr) Del(key string) (*clientv3.DeleteResponse, error) {
 	deleteResponse, err := p.kv.Delete(context.TODO(), key)
 	if err != nil {
 		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -257,7 +257,7 @@ func (p *Mgr) Del(key string) (*clientv3.DeleteResponse, error) {
 }
 
 // DelRange 按选项删除范围内的键值
-func (p *Mgr) DelRange(startKeyPrefix string, endKeyPrefix string) (*clientv3.DeleteResponse, error) {
+func (p *mgr) DelRange(startKeyPrefix string, endKeyPrefix string) (*clientv3.DeleteResponse, error) {
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithFromKey(),
@@ -271,12 +271,12 @@ func (p *Mgr) DelRange(startKeyPrefix string, endKeyPrefix string) (*clientv3.De
 }
 
 // WatchPrefix 监视以key为前缀的所有 key value
-func (p *Mgr) WatchPrefix(key string) clientv3.WatchChan {
+func (p *mgr) WatchPrefix(key string) clientv3.WatchChan {
 	return p.client.Watch(context.TODO(), key, clientv3.WithPrefix())
 }
 
 // Get 检索键
-func (p *Mgr) Get(key string) (*clientv3.GetResponse, error) {
+func (p *mgr) Get(key string) (*clientv3.GetResponse, error) {
 	getResponse, err := p.kv.Get(context.TODO(), key)
 	if err != nil {
 		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -285,7 +285,7 @@ func (p *Mgr) Get(key string) (*clientv3.GetResponse, error) {
 }
 
 // GetPrefix 查找以key为前缀的所有 key value
-func (p *Mgr) GetPrefix(key string) (*clientv3.GetResponse, error) {
+func (p *mgr) GetPrefix(key string) (*clientv3.GetResponse, error) {
 	getResponse, err := p.kv.Get(context.TODO(), key, clientv3.WithPrefix())
 	if err != nil {
 		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -294,7 +294,7 @@ func (p *Mgr) GetPrefix(key string) (*clientv3.GetResponse, error) {
 }
 
 // GetPrefixIntoChan  取得关心的前缀,放入 chan 中
-func (p *Mgr) GetPrefixIntoChan(preFix string) (err error) {
+func (p *mgr) GetPrefixIntoChan(preFix string) (err error) {
 	getResponse, err := p.GetPrefix(preFix)
 	if err != nil {
 		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -309,7 +309,7 @@ func (p *Mgr) GetPrefixIntoChan(preFix string) (err error) {
 }
 
 // WatchPrefixIntoChan 监听key变化,放入 chan 中
-func (p *Mgr) WatchPrefixIntoChan(preFix string) (err error) {
+func (p *mgr) WatchPrefixIntoChan(preFix string) (err error) {
 	eventChan := p.WatchPrefix(preFix)
 	go func() {
 		defer func() {
