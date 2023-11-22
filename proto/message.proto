@@ -11,7 +11,3 @@ message ServiceKey{ //服务key
   string serviceName = 2;//服务名称
   uint32 serviceID = 3;//服务ID
 }
-
-//message Msg { // 消息
-//  bytes data = 1; // 消息数据
-//}
