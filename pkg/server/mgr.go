@@ -51,6 +51,7 @@ type mgr struct {
 
 	status uint32
 
+	QuitChan chan bool
 	// 检查总线channel
 	checkBusChan chan struct{}
 }
@@ -58,6 +59,7 @@ type mgr struct {
 // PreInit 初始化之前的操作
 func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
 	p.checkBusChan = make(chan struct{}, 1)
+	p.QuitChan = make(chan bool)
 
 	rand.Seed(time.Now().UnixNano())
 	p.TimeMgr.Update()
