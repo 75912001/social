@@ -52,6 +52,7 @@ type mgr struct {
 
 	status uint32
 
+	//服务中,如果有需要终止服务,则 QuitChan<-true
 	QuitChan chan bool
 	// 检查总线channel
 	checkBusChan chan struct{}
@@ -218,11 +219,11 @@ func (p *mgr) Stop() error {
 
 	if bench.GetInstance().Timer.ScanSecondDuration != nil || bench.GetInstance().Timer.ScanMillisecondDuration != nil {
 		xrtimer.GetInstance().Stop()
-		xrlog.GetInstance().Warn("GTimer stop")
+		xrlog.GetInstance().Warn("server Timer stop")
 	}
 	if xretcd.IsEnable() {
 		_ = xretcd.GetInstance().Stop()
-		xrlog.GetInstance().Warn("GEtcd stop")
+		xrlog.GetInstance().Warn("server Etcd stop")
 	}
 	return nil
 }
