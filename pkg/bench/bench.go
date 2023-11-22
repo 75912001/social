@@ -10,17 +10,27 @@ import (
 	xrlog "social/pkg/lib/log"
 	xrutil "social/pkg/lib/util"
 	"social/pkg/server"
+	"sync"
 	"time"
 )
 
 //bench.json 配置文件.
 //该配置文件与可执行程序在同一目录下.
 
-type Mgr struct {
-	Json benchJson
+var (
+	instance *mgr
+	once     sync.Once
+)
+
+// GetInstance 获取
+func GetInstance() *mgr {
+	once.Do(func() {
+		instance = new(mgr)
+	})
+	return instance
 }
 
-type benchJson struct {
+type mgr struct {
 	Base   Base   `json:"base"`
 	Etcd   Etcd   `json:"etcd"`
 	Timer  Timer  `json:"timer"`
@@ -51,8 +61,8 @@ type Timer struct {
 
 type Etcd struct {
 	Addrs []string      `json:"addrs"`
-	TTL   int64         `json:"ttl"` //ttl 秒 [默认为 common.EtcdTtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒]
-	Key   string        //`json:"key"`   //common.ProjectName/common.EtcdWatchMsgTypeService/zoneID/serviceName/serviceID
+	TTL   int64         `json:"ttl"`   //ttl 秒 [默认为 common.EtcdTtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒]
+	Key   string        `json:"key"`   //common.ProjectName/common.EtcdWatchMsgTypeService/zoneID/serviceName/serviceID
 	Value EtcdValueJson `json:"value"` //有:直接使用. default:{"ip":"192.168.50.10","port":3021, "version":version}
 }
 
@@ -69,66 +79,66 @@ type ServiceNetJson struct {
 }
 
 // String 显示服务信息
-func (p *benchJson) String() string {
+func (p *mgr) String() string {
 	return fmt.Sprintf("version:%v", p.Base.Version)
 }
 
 // Parse 解析, bench.json
-func (p *Mgr) Parse(pathFile string) error {
-	if err := json.Unmarshal([]byte(pathFile), &p.Json); err != nil {
+func (p *mgr) Parse(pathFile string) error {
+	if err := json.Unmarshal([]byte(pathFile), &p); err != nil {
 		return errors.WithMessagef(err, "%v %v", pathFile, xrutil.GetCodeLocation(1).String())
 	}
 	//base
-	if len(p.Json.Base.Version) == 0 {
+	if len(p.Base.Version) == 0 {
 		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
 	}
-	if 0 == p.Json.Base.LogLevel {
-		p.Json.Base.LogLevel = int(xrlog.LevelOn)
+	if 0 == p.Base.LogLevel {
+		p.Base.LogLevel = int(xrlog.LevelOn)
 	}
-	if len(p.Json.Base.LogAbsPath) == 0 {
-		p.Json.Base.LogAbsPath = common.LogAbsPath
+	if len(p.Base.LogAbsPath) == 0 {
+		p.Base.LogAbsPath = common.LogAbsPath
 	}
-	if 0 == p.Json.Base.BusChannelNumber {
+	if 0 == p.Base.BusChannelNumber {
 		//1000000 大约占用15.6MB
-		p.Json.Base.BusChannelNumber = 1000000
+		p.Base.BusChannelNumber = 1000000
 	}
-	if 0 == p.Json.Base.GoMaxProcess {
-		p.Json.Base.GoMaxProcess = runtime.NumCPU()
+	if 0 == p.Base.GoMaxProcess {
+		p.Base.GoMaxProcess = runtime.NumCPU()
 	}
-	xrutil.GRunMode = p.Json.Base.RunMode
+	xrutil.GRunMode = p.Base.RunMode
 	//server
-	if len(p.Json.Server.IP) == 0 {
+	if len(p.Server.IP) == 0 {
 		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
 	}
-	if p.Json.Server.Port == 0 {
+	if p.Server.Port == 0 {
 		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
 	}
 	//etcd
-	if len(p.Json.Etcd.Addrs) == 0 {
+	if len(p.Etcd.Addrs) == 0 {
 		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
 	}
-	if p.Json.Etcd.TTL == 0 {
-		p.Json.Etcd.TTL = common.EtcdTtlSecondDefault
+	if p.Etcd.TTL == 0 {
+		p.Etcd.TTL = common.EtcdTtlSecondDefault
 	}
-	if len(p.Json.Etcd.Key) == 0 {
-		p.Json.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
+	if len(p.Etcd.Key) == 0 {
+		p.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
 			common.ProjectName, common.EtcdWatchMsgTypeService,
-			server.GMgr.ZoneID, server.GMgr.ServiceName, server.GMgr.ServiceID)
+			server.GetInstance().ZoneID, server.GetInstance().ServiceName, server.GetInstance().ServiceID)
 	}
-	if len(p.Json.Etcd.Value.ServiceNetTCP.IP) == 0 {
-		p.Json.Etcd.Value.ServiceNetTCP.IP = p.Json.Server.IP
+	if len(p.Etcd.Value.ServiceNetTCP.IP) == 0 {
+		p.Etcd.Value.ServiceNetTCP.IP = p.Server.IP
 	}
-	if p.Json.Etcd.Value.ServiceNetTCP.Port == 0 {
-		p.Json.Etcd.Value.ServiceNetTCP.Port = p.Json.Server.Port
+	if p.Etcd.Value.ServiceNetTCP.Port == 0 {
+		p.Etcd.Value.ServiceNetTCP.Port = p.Server.Port
 	}
 	//timer
-	if nil == p.Json.Timer.ScanSecondDuration {
+	if nil == p.Timer.ScanSecondDuration {
 		t := time.Millisecond * 100
-		p.Json.Timer.ScanSecondDuration = &t
+		p.Timer.ScanSecondDuration = &t
 	}
-	if nil == p.Json.Timer.ScanMillisecondDuration {
+	if nil == p.Timer.ScanMillisecondDuration {
 		t := time.Millisecond * 25
-		p.Json.Timer.ScanMillisecondDuration = &t
+		p.Timer.ScanMillisecondDuration = &t
 	}
 	return nil
 }
