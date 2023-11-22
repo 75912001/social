@@ -50,10 +50,15 @@ type mgr struct {
 	//
 
 	status uint32
+
+	// 检查总线channel
+	checkBusChan chan struct{}
 }
 
 // PreInit 初始化之前的操作
 func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
+	p.checkBusChan = make(chan struct{}, 1)
+
 	rand.Seed(time.Now().UnixNano())
 	p.TimeMgr.Update()
 	// 小端
@@ -173,7 +178,24 @@ func (p *mgr) PostInit(ctx context.Context, opts ...*Options) error {
 
 func (p *mgr) Stop() error {
 	// 定时检查事件总线是否消费完成
-	go checkGBusChannel()
+	go func() {
+		xrlog.GetInstance().Warn("start checkGBusChannel timer")
+
+		idleDuration := 500 * time.Millisecond
+		idleDelay := time.NewTimer(idleDuration)
+		defer func() {
+			idleDelay.Stop()
+		}()
+
+		for {
+			select {
+			case <-idleDelay.C:
+				idleDelay.Reset(idleDuration)
+				p.checkBusChan <- struct{}{}
+				xrlog.GetInstance().Warn("send to GCheckBusChan")
+			}
+		}
+	}()
 
 	// 等待GEventChan处理结束
 	p.BusChannelWaitGroup.Wait()
@@ -186,6 +208,5 @@ func (p *mgr) Stop() error {
 		_ = xretcd.GetInstance().Stop()
 		xrlog.GetInstance().Warn("GEtcd stop")
 	}
-
 	return nil
 }
