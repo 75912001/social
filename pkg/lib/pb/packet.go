@@ -20,7 +20,6 @@ type IPacket interface {
 	//	参数:
 	//		data:数据(包头+包体)
 	//	返回:
-	//		header:包头
-	//		message:消息
-	Unmarshal(data []byte) (header IHeader, message proto.Message, err error)
+	//		UnserializedPacket:未序列化的数据包
+	Unmarshal(data []byte) (unserializedPacket *UnserializedPacket, err error)
 }
