@@ -17,7 +17,7 @@ type Fields []interface{}
 
 // Entry 日志数据信息
 type Entry struct {
-	logger     *Mgr
+	logger     *mgr
 	time       time.Time //生成日志的时间
 	level      Level     //日志级别
 	callerInfo string    //调用堆栈信息
@@ -36,7 +36,7 @@ func (p *Entry) reset() {
 }
 
 // newEntry 创建
-func newEntry(logger *Mgr) *Entry {
+func newEntry(logger *mgr) *Entry {
 	if logger.options.IsEnablePool() {
 		entry := logger.pool.Get().(*Entry)
 		entry.logger = logger
