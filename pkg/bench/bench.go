@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"math"
 	"runtime"
 	"social/pkg/common"
 	"social/pkg/etcd"
@@ -44,6 +45,7 @@ type Base struct {
 	LogLevel         int            `json:"logLevel"`         //日志等级 default:7
 	LogAbsPath       string         `json:"logAbsPath"`       //日志绝对路径 default:/data/xxx/log
 	GoMaxProcess     int            `json:"goMaxProcess"`     //default:runtime.NumCPU()
+	AvailableLoad    uint32         `json:"availableLoad"`    //可用负载, 可用资源数 default:math.MaxUint32
 	BusChannelNumber uint32         `json:"busChannelNumber"` //事件chan数量. default:1000000 大约占用15.6MB
 	RunMode          xrutil.RunMode `json:"runMode"`          //运行模式 0:release 1:debug default:0,release
 }
@@ -105,6 +107,9 @@ func (p *mgr) Parse(pathFile string) error {
 	}
 	if 0 == p.Base.GoMaxProcess {
 		p.Base.GoMaxProcess = runtime.NumCPU()
+	}
+	if 0 == p.Base.AvailableLoad {
+		p.Base.AvailableLoad = math.MaxUint32
 	}
 	xrutil.GRunMode = p.Base.RunMode
 	//server
