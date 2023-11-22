@@ -17,8 +17,21 @@ import (
 
 var SecondOffset int64 // 时间偏移量-秒
 
+var (
+	instance *mgr
+	once     sync.Once
+)
+
+// GetInstance 获取
+func GetInstance() *mgr {
+	once.Do(func() {
+		instance = new(mgr)
+	})
+	return instance
+}
+
 // Mgr 定时器管理器
-type Mgr struct {
+type mgr struct {
 	options         *Options
 	secondSlice     [cycleSize]cycle // 秒,数据
 	millisecondList list.List        // 毫秒,数据
@@ -29,7 +42,7 @@ type Mgr struct {
 }
 
 // ShadowTimeSecond 叠加偏移量的秒
-func (p *Mgr) ShadowTimeSecond() int64 {
+func (p *mgr) ShadowTimeSecond() int64 {
 	return time.Now().Unix() + SecondOffset
 }
 
@@ -37,7 +50,7 @@ func (p *Mgr) ShadowTimeSecond() int64 {
 type OnFun func(arg interface{})
 
 // 每秒更新
-func (p *Mgr) funcSecond(ctx context.Context) {
+func (p *mgr) funcSecond(ctx context.Context) {
 	defer func() {
 		if xrutil.IsRelease() {
 			if err := recover(); err != nil {
@@ -67,7 +80,7 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 }
 
 // 每millisecond个毫秒更新
-func (p *Mgr) funcMillisecond(ctx context.Context) {
+func (p *mgr) funcMillisecond(ctx context.Context) {
 	defer func() {
 		if xrutil.IsRelease() {
 			if err := recover(); err != nil {
@@ -104,7 +117,7 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 }
 
 // Deprecated: [bug]当扫描频率的毫秒数较低的时候,来不及处理,会累加...  每millisecond个毫秒更新
-func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
+func (p *mgr) funcMillisecondNewTicker(ctx context.Context) {
 	defer func() {
 		if xrutil.IsRelease() {
 			if err := recover(); err != nil {
@@ -133,7 +146,7 @@ func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 
 // Start
 // [NOTE] 处理定时器相关数据,必须与该timeoutChan线性处理.如:在同一个goroutine select中处理数据
-func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
+func (p *mgr) Start(ctx context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	if err := p.configure(p.options); err != nil {
 		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -161,7 +174,7 @@ func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
 }
 
 // Stop 停止服务
-func (p *Mgr) Stop() {
+func (p *mgr) Stop() {
 	if p.cancelFunc != nil {
 		p.cancelFunc()
 		// 等待 second, milliSecond goroutine退出.
@@ -170,7 +183,7 @@ func (p *Mgr) Stop() {
 	}
 }
 
-func (p *Mgr) push2TimeOutChan(i interface{}) {
+func (p *mgr) push2TimeOutChan(i interface{}) {
 	p.options.timeoutChan <- i
 }
 
@@ -182,7 +195,7 @@ func (p *Mgr) push2TimeOutChan(i interface{}) {
 //		expireMillisecond:过期毫秒数
 //	返回值:
 //		毫秒定时器
-func (p *Mgr) AddMillisecond(cb OnFun, arg interface{}, expireMillisecond int64) *Millisecond {
+func (p *mgr) AddMillisecond(cb OnFun, arg interface{}, expireMillisecond int64) *Millisecond {
 	t := &Millisecond{
 		Arg:      arg,
 		Function: cb,
@@ -197,7 +210,7 @@ func (p *Mgr) AddMillisecond(cb OnFun, arg interface{}, expireMillisecond int64)
 //
 //	参数:
 //		millisecond:到期毫秒数
-func (p *Mgr) scanMillisecond(millisecond int64) {
+func (p *mgr) scanMillisecond(millisecond int64) {
 	var next *list.Element
 	for e := p.millisecondList.Front(); e != nil; e = next {
 		timerMillisecond := e.Value.(*Millisecond)
@@ -224,7 +237,7 @@ func (p *Mgr) scanMillisecond(millisecond int64) {
 //		expire:过期秒数
 //	返回值:
 //		秒定时器
-func (p *Mgr) AddSecond(cb OnFun, arg interface{}, expire int64) *Second {
+func (p *mgr) AddSecond(cb OnFun, arg interface{}, expire int64) *Second {
 	t := &Second{
 		Millisecond{
 			Arg:      arg,
@@ -242,7 +255,7 @@ func (p *Mgr) AddSecond(cb OnFun, arg interface{}, expire int64) *Second {
 //	参数:
 //		timerSecond:秒定时器
 //		cycleIdx:轮序号
-func (p *Mgr) pushBackCycle(timerSecond *Second, cycleIdx int) {
+func (p *mgr) pushBackCycle(timerSecond *Second, cycleIdx int) {
 	p.secondSlice[cycleIdx].data.PushBack(timerSecond)
 
 	if timerSecond.expire < p.secondSlice[cycleIdx].minExpire {
@@ -253,7 +266,7 @@ func (p *Mgr) pushBackCycle(timerSecond *Second, cycleIdx int) {
 // 扫描秒级定时器
 //
 //	second:到期秒数
-func (p *Mgr) scanSecond(second int64) {
+func (p *mgr) scanSecond(second int64) {
 	var next *list.Element
 
 	cycle0 := &p.secondSlice[0]

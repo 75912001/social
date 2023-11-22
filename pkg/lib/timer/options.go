@@ -60,7 +60,7 @@ func mergeOptions(opts ...*Options) *Options {
 }
 
 // 配置
-func (p *Mgr) configure(opts *Options) error {
+func (p *mgr) configure(opts *Options) error {
 	if opts.timeoutChan == nil {
 		return errors.WithMessage(xrerror.Param, xrutil.GetCodeLocation(1).String())
 	}
