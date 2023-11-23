@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	xrconstant "social/pkg/lib/constant"
 	xrerror "social/pkg/lib/error"
 	"strconv"
@@ -117,20 +116,6 @@ func WeightedRandom(weights []uint32) (idx int, err error) {
 		r -= int64(v)
 	}
 	return 0, errors.WithMessage(xrerror.System, GetCodeLocation(1).String())
-}
-
-// ServiceInfo 服务信息
-//
-//	NOTE 有性能影响.
-//	建议 只在调试/测试时使用.
-func ServiceInfo() string {
-	var memStats runtime.MemStats
-	runtime.ReadMemStats(&memStats)
-
-	s := debug.GCStats{}
-	debug.ReadGCStats(&s)
-	return fmt.Sprintf("[goroutines-number:%v gc:%d last GC at:%v PauseTotal:%v MemStats:%+v]",
-		runtime.NumGoroutine(), s.NumGC, s.LastGC, s.PauseTotal, memStats)
 }
 
 // CodeLocation 代码位置

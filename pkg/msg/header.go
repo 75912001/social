@@ -16,9 +16,11 @@ type Header struct {
 	ResultID  uint32 //结果id
 }
 
-func (p *Header) Pack(data []byte) {
+func (p *Header) Pack() []byte {
+	var data [GProtoHeadLength]byte
 	binary.LittleEndian.PutUint32(data[0:], p.MessageID)
 	binary.LittleEndian.PutUint32(data[4:], p.ResultID)
+	return data[:]
 }
 
 func (p *Header) Unpack(data []byte) {

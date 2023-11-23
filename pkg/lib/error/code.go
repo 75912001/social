@@ -97,7 +97,7 @@ var (
 	Unavailable = &Error{Code: 0xf02d, Name: "Unavailable", Desc: "unavailable"}
 	// Unknown 未知
 	Unknown = &Error{Code: 0xf02e, Name: "Unknown", Desc: "unknown"}
-	// 0xfff
+	// 0xffff
 )
 
 func init() {

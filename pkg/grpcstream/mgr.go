@@ -1,4 +1,4 @@
-package common
+package grpcstream
 
 import (
 	"github.com/pkg/errors"
@@ -7,29 +7,29 @@ import (
 	"sync"
 )
 
-// grpc的双向流,客户端管理器
+// grpc的双向流,管理器-管理客户端
 
-// GrpcStreamMgr 客户端,数据流管理器
-type GrpcStreamMgr struct {
+// mgr 客户端,数据流管理器
+type mgr struct {
 	clientMap sync.Map //k:client uuid, v:stream
 	streamMap sync.Map //k:&stream, v:client uuid
 }
 
 var (
-	instance *GrpcStreamMgr
+	instance *mgr
 	once     sync.Once
 )
 
-// GetGrpcStreamMgrInstance 获取实例
-func GetGrpcStreamMgrInstance() *GrpcStreamMgr {
+// GetInstance 获取实例
+func GetInstance() *mgr {
 	once.Do(func() {
-		instance = new(GrpcStreamMgr)
+		instance = new(mgr)
 	})
 	return instance
 }
 
 // Add 添加
-func (p *GrpcStreamMgr) Add(clientUUID any, stream any) error {
+func (p *mgr) Add(clientUUID any, stream any) error {
 	if clientUUID == nil || stream == nil {
 		return errors.WithMessage(xrerror.Param.WithExtraMessage("clientUUID or stream is nil"), xrutil.GetCodeLocation(1).String())
 	}
@@ -46,7 +46,7 @@ func (p *GrpcStreamMgr) Add(clientUUID any, stream any) error {
 }
 
 // Del 删除
-func (p *GrpcStreamMgr) Del(stream any) error {
+func (p *mgr) Del(stream any) error {
 	if stream == nil {
 		return errors.WithMessage(xrerror.Param.WithExtraMessage("stream is nil"), xrutil.GetCodeLocation(1).String())
 	}
@@ -61,13 +61,13 @@ func (p *GrpcStreamMgr) Del(stream any) error {
 }
 
 // IsClientUUIDExists 是否存在
-func (p *GrpcStreamMgr) IsClientUUIDExists(clientUUID any) bool {
+func (p *mgr) IsClientUUIDExists(clientUUID any) bool {
 	_, ok := p.clientMap.Load(clientUUID)
 	return ok
 }
 
 // IsStreamExists 是否存在
-func (p *GrpcStreamMgr) IsStreamExists(stream any) bool {
+func (p *mgr) IsStreamExists(stream any) bool {
 	_, ok := p.streamMap.Load(stream)
 	return ok
 }

@@ -10,29 +10,35 @@ import (
 type Packet struct{}
 
 // Marshal 序列化 数据包
-func (p *Packet) Marshal(packet *xrpb.UnserializedPacket) ([]byte, error) {
-	var data []byte
+func (p *Packet) Marshal(unserializedPacket *xrpb.UnserializedPacket) ([]byte, error) {
+	headerBuf := unserializedPacket.Header.Pack()
+
+	var messageBuf []byte
 	var err error
-	if data, err = proto.Marshal(packet.Message); nil != err && proto.ErrNil != err {
+	if messageBuf, err = proto.Marshal(unserializedPacket.Message); nil != err && proto.ErrNil != err {
 		return nil, errors.WithMessagef(err, xrutil.GetCodeLocation(1).String())
 	}
 
-	packetLength := GProtoHeadLength + uint32(len(data))
-	buf := make([]byte, packetLength)
+	packetLength := GProtoHeadLength + uint32(len(messageBuf))
+	packetBuf := make([]byte, packetLength)
 
-	packet.Header.Pack(buf)
-	copy(buf[GProtoHeadLength:packetLength], data)
-	return buf, nil
+	copy(packetBuf[0:GProtoHeadLength], headerBuf)
+	copy(packetBuf[GProtoHeadLength:], messageBuf)
+	return packetBuf, nil
 }
 
 // Unmarshal 反序列化
 //
 //	data:完整包数据 包头+包体
-func (p *Packet) Unmarshal(data []byte) (header xrpb.IHeader, msg proto.Message, err error) {
-	header = &Header{}
-	header.Unpack(data)
+func (p *Packet) Unmarshal(data []byte) (unserializedPacket *xrpb.UnserializedPacket, err error) {
+	var msg proto.Message
 	if err = proto.Unmarshal(data[GProtoHeadLength:], msg); nil != err {
-		return nil, nil, errors.WithMessagef(err, "%v data:%v", xrutil.GetCodeLocation(1).String(), data)
+		return nil, errors.WithMessagef(err, "%v data:%v", xrutil.GetCodeLocation(1).String(), data)
 	}
-	return header, msg, nil
+	unserializedPacket = &xrpb.UnserializedPacket{
+		Header:  &Header{},
+		Message: msg,
+	}
+	unserializedPacket.Header.Unpack(data)
+	return unserializedPacket, nil
 }

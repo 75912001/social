@@ -30,14 +30,14 @@ const (
 )
 
 var (
-	instance *Mgr
+	instance *mgr
 	once     sync.Once
 )
 
 // GetInstance 获取
-func GetInstance() *Mgr {
+func GetInstance() *mgr {
 	once.Do(func() {
-		instance = new(Mgr)
+		instance = new(mgr)
 	})
 	return instance
 }
@@ -50,8 +50,8 @@ func IsEnable() bool {
 	return GetInstance().logChan != nil
 }
 
-// Mgr 日志
-type Mgr struct {
+// mgr 日志
+type mgr struct {
 	options *Options
 
 	loggerSlice     [LevelOn]*log.Logger // 日志实例 note:此处非协程安全
@@ -63,7 +63,7 @@ type Mgr struct {
 }
 
 // GetLevel 获取日志等级
-func (p *Mgr) GetLevel() Level {
+func (p *mgr) GetLevel() Level {
 	if p.options == nil {
 		return LevelOn
 	}
@@ -78,7 +78,7 @@ func (p *Mgr) GetLevel() Level {
 //	参数:
 //		absPath:日志绝对路径
 //		namePrefix:日志名 前缀
-func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
+func (p *mgr) Start(_ context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	if err := configure(p.options); err != nil {
 		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
@@ -121,7 +121,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
 }
 
 // getLogDuration 取得日志刻度
-func (p *Mgr) getLogDuration(sec int64) int {
+func (p *mgr) getLogDuration(sec int64) int {
 	var logFormat string
 	if xrutil.IsRelease() {
 		logFormat = "2006010215" //年月日小时
@@ -138,7 +138,7 @@ func (p *Mgr) getLogDuration(sec int64) int {
 }
 
 // doLog 处理日志
-func (p *Mgr) doLog() {
+func (p *mgr) doLog() {
 	for v := range p.logChan {
 		p.fireHooks(v)
 
@@ -166,7 +166,7 @@ func (p *Mgr) doLog() {
 }
 
 // SetLevel 设置日志等级
-func (p *Mgr) SetLevel(lv Level) error {
+func (p *mgr) SetLevel(lv Level) error {
 	if lv < LevelOff || LevelOn < lv {
 		return errors.WithMessage(xrerror.Level, xrutil.GetCodeLocation(1).String())
 	}
@@ -175,7 +175,7 @@ func (p *Mgr) SetLevel(lv Level) error {
 }
 
 // newWriters 初始化各级别的日志输出
-func (p *Mgr) newWriters() error {
+func (p *mgr) newWriters() error {
 	// 检查是否要关闭文件
 	for i := range p.openFiles {
 		if err := p.openFiles[i].Close(); err != nil {
@@ -217,7 +217,7 @@ func (p *Mgr) newWriters() error {
 }
 
 // Stop 停止
-func (p *Mgr) Stop() error {
+func (p *mgr) Stop() error {
 	if p.logChan != nil {
 		// close chan, for range 读完chan会退出.
 		close(p.logChan)
@@ -239,7 +239,7 @@ func (p *Mgr) Stop() error {
 }
 
 // fireHooks 处理钩子
-func (p *Mgr) fireHooks(entry *Entry) {
+func (p *mgr) fireHooks(entry *Entry) {
 	if 0 == len(p.options.hooks) {
 		return
 	}
@@ -251,39 +251,39 @@ func (p *Mgr) fireHooks(entry *Entry) {
 }
 
 // WithField 由field创建日志信息 默认大小2(cap:2*2=4)
-func (p *Mgr) WithField(key string, value interface{}) *Entry {
+func (p *mgr) WithField(key string, value interface{}) *Entry {
 	entry := newEntry(p)
 	entry.fields = make(Fields, 0, 4)
 	return entry.WithField(key, value)
 }
 
 // WithFields 由fields创建日志信息 默认大小4(cap:4*2=8)
-func (p *Mgr) WithFields(fields Fields) *Entry {
+func (p *mgr) WithFields(fields Fields) *Entry {
 	entry := newEntry(p)
 	entry.fields = make(Fields, 0, 8)
 	return entry.WithFields(fields)
 }
 
 // WithContext 由ctx创建日志信息
-func (p *Mgr) WithContext(ctx context.Context) *Entry {
+func (p *mgr) WithContext(ctx context.Context) *Entry {
 	entry := newEntry(p)
 	return entry.WithContext(ctx)
 }
 
 // log 记录日志
-func (p *Mgr) log(level Level, v ...interface{}) {
+func (p *mgr) log(level Level, v ...interface{}) {
 	entry := newEntry(p)
 	entry.log(level, 3, v...)
 }
 
 // logf 记录日志
-func (p *Mgr) logf(level Level, format string, v ...interface{}) {
+func (p *mgr) logf(level Level, format string, v ...interface{}) {
 	entry := newEntry(p)
 	entry.logf(level, 3, format, v...)
 }
 
 // Trace 踪迹日志
-func (p *Mgr) Trace(v ...interface{}) {
+func (p *mgr) Trace(v ...interface{}) {
 	if *p.options.level < LevelTrace {
 		return
 	}
@@ -291,7 +291,7 @@ func (p *Mgr) Trace(v ...interface{}) {
 }
 
 // Tracef 踪迹日志
-func (p *Mgr) Tracef(format string, v ...interface{}) {
+func (p *mgr) Tracef(format string, v ...interface{}) {
 	if *p.options.level < LevelTrace {
 		return
 	}
@@ -299,7 +299,7 @@ func (p *Mgr) Tracef(format string, v ...interface{}) {
 }
 
 // Debug 调试日志
-func (p *Mgr) Debug(v ...interface{}) {
+func (p *mgr) Debug(v ...interface{}) {
 	if *p.options.level < LevelDebug {
 		return
 	}
@@ -307,7 +307,7 @@ func (p *Mgr) Debug(v ...interface{}) {
 }
 
 // Debugf 调试日志
-func (p *Mgr) Debugf(format string, v ...interface{}) {
+func (p *mgr) Debugf(format string, v ...interface{}) {
 	if *p.options.level < LevelDebug {
 		return
 	}
@@ -315,7 +315,7 @@ func (p *Mgr) Debugf(format string, v ...interface{}) {
 }
 
 // Info 信息日志
-func (p *Mgr) Info(v ...interface{}) {
+func (p *mgr) Info(v ...interface{}) {
 	if *p.options.level < LevelInfo {
 		return
 	}
@@ -323,7 +323,7 @@ func (p *Mgr) Info(v ...interface{}) {
 }
 
 // Infof 信息日志
-func (p *Mgr) Infof(format string, v ...interface{}) {
+func (p *mgr) Infof(format string, v ...interface{}) {
 	if *p.options.level < LevelInfo {
 		return
 	}
@@ -331,7 +331,7 @@ func (p *Mgr) Infof(format string, v ...interface{}) {
 }
 
 // Warn 警告日志
-func (p *Mgr) Warn(v ...interface{}) {
+func (p *mgr) Warn(v ...interface{}) {
 	if *p.options.level < LevelWarn {
 		return
 	}
@@ -339,7 +339,7 @@ func (p *Mgr) Warn(v ...interface{}) {
 }
 
 // Warnf 警告日志
-func (p *Mgr) Warnf(format string, v ...interface{}) {
+func (p *mgr) Warnf(format string, v ...interface{}) {
 	if *p.options.level < LevelWarn {
 		return
 	}
@@ -347,7 +347,7 @@ func (p *Mgr) Warnf(format string, v ...interface{}) {
 }
 
 // Error 错误日志
-func (p *Mgr) Error(v ...interface{}) {
+func (p *mgr) Error(v ...interface{}) {
 	if *p.options.level < LevelError {
 		return
 	}
@@ -355,7 +355,7 @@ func (p *Mgr) Error(v ...interface{}) {
 }
 
 // Errorf 错误日志
-func (p *Mgr) Errorf(format string, v ...interface{}) {
+func (p *mgr) Errorf(format string, v ...interface{}) {
 	if *p.options.level < LevelError {
 		return
 	}
@@ -363,7 +363,7 @@ func (p *Mgr) Errorf(format string, v ...interface{}) {
 }
 
 // Fatal 致命日志
-func (p *Mgr) Fatal(v ...interface{}) {
+func (p *mgr) Fatal(v ...interface{}) {
 	if *p.options.level < LevelFatal {
 		return
 	}
@@ -371,7 +371,7 @@ func (p *Mgr) Fatal(v ...interface{}) {
 }
 
 // Fatalf 致命日志
-func (p *Mgr) Fatalf(format string, v ...interface{}) {
+func (p *mgr) Fatalf(format string, v ...interface{}) {
 	if *p.options.level < LevelFatal {
 		return
 	}

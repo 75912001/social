@@ -21,15 +21,19 @@
 安装包
 
     go get google.golang.org/grpc
-    go get -v  github.com/pkg/errors
+    go get -v github.com/pkg/errors
+    go get go.etcd.io/etcd/client/v3
+    go get github.com/google/uuid
+
 
 使用以下命令安装Go的协议编译器插件
 
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
     相关link:https://grpc.io/docs/languages/go/quickstart/
-    
 
+
+    
 
 ## protobuf 工具
 
