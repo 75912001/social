@@ -1,23 +1,28 @@
 package gate
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
-	"log"
-	"social/pkg/common"
+	"social/internal/gate/router"
+	"social/pkg/grpcstream"
 	xrerror "social/pkg/lib/error"
+	xrlog "social/pkg/lib/log"
+	xrpb "social/pkg/lib/pb"
 	xrutil "social/pkg/lib/util"
+	"social/pkg/msg"
+	pkg_proto "social/pkg/proto"
 	"social/pkg/proto/gate"
 )
 
 func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalBinaryDataServer) error {
+	defer func() {
+
+	}()
 	for {
 		request, err := stream.Recv()
 		if err != nil {
-			log.Fatalln(err, xrerror.Link, stream, xrutil.GetCodeLocation(1))
+			xrlog.GetInstance().Fatal(err, xrerror.Link, stream, xrutil.GetCodeLocation(1))
 			// 使用 status.FromError 函数获取 gRPC 状态
 			st, ok := status.FromError(err)
 			if ok {
@@ -25,7 +30,7 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalB
 				code := st.Code()
 				// 获取错误消息
 				message := st.Message()
-				log.Fatalln(code, message, xrutil.GetCodeLocation(1))
+				xrlog.GetInstance().Fatal(code, message, xrutil.GetCodeLocation(1))
 
 				// 根据错误代码采取不同的处理方式
 				switch code {
@@ -44,86 +49,104 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalB
 				}
 				// 在处理不同类型的错误后，可以根据需要进行其他操作
 			} else {
-				log.Fatalln(st, ok, stream, xrutil.GetCodeLocation(1))
+				xrlog.GetInstance().Fatal(st, ok, stream, xrutil.GetCodeLocation(1))
 			}
-			e := common.GetGrpcStreamMgrInstance().Del(stream)
-			if e != nil {
-				log.Fatalln(err, e, xrutil.GetCodeLocation(1))
-				return errors.WithMessage(err, e.Error())
+			err2 := grpcstream.GetInstance().Del(stream)
+			if err2 != nil {
+				xrlog.GetInstance().Fatal(err, err2, xrutil.GetCodeLocation(1))
+				return errors.WithMessage(err, err2.Error())
 			}
 			return err
 		}
 		{ //获取数据-二进制
-			b := request.GetData()
+			data := request.GetData()
+			if uint32(len(data)) < msg.GProtoHeadLength {
+				//todo menglingchao 消息长度不足,断开链接 grpc
+				return errors.WithMessage(xrerror.Packet, xrutil.GetCodeLocation(1).String())
+			}
 
-			proto.Unmarshal(b, gate.)
+			header := &msg.Header{
+				MessageID: 0,
+				ResultID:  0,
+			}
+			header.Unpack(data)
+			xrlog.GetInstance().Trace(header.String())
+			//todo menglingchao 按照CMD来 处理/分发 数据包...
+			//return xxx
+			err = router.GetInstance().Handle(header, data)
+			if err != nil {
+				xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+				return err
+			}
 		}
-		//// 根据请求类型选择处理逻辑
-		//switch req := request.GetData().(type) {
-		//case *gate.Request_RegisterReq:
-		//	log.Println("Received Request_RegisterReq:", req.RegisterReq.GetServiceKey())
-		//	// 处理 RegisterReq 并生成响应
-		//	res := &gate.Response{
-		//		Response: &gate.Response_RegisterRes{
-		//			RegisterRes: &gate.RegisterRes{},
-		//		},
-		//	}
-		//	err = common.GetGrpcStreamMgrInstance().Add(req.RegisterReq.GetServiceKey().GetServiceID(), stream)
-		//	if err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//	if err = stream.Send(res); err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//case *gate.Request_LogoutReq:
-		//	log.Println("Received Request_LogoutReq:", req.LogoutReq.GetServiceKey())
-		//	// 处理 RequestTypeB 并生成响应
-		//	response := &gate.Response{
-		//		Response: &gate.Response_LogoutRes{
-		//			LogoutRes: &gate.LogoutRes{},
-		//		},
-		//	}
-		//	//删除client
-		//	err = common.GetGrpcStreamMgrInstance().Del(stream)
-		//	if err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//	if err = stream.Send(response); err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//default:
-		//
-		//	log.Fatalln(xrerror.MessageIDNonExistent, xrutil.GetCodeLocation(1))
-		//	return nil
-		//}
+		err = handle(stream, request.GetData())
+		if err != nil {
+			xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+			return err
+		}
 	}
 }
 
-func (s *Server) ForwardBinaryData(stream gate.Service_ForwardBinaryDataServer) error {
-	for {
-		data, err := stream.Recv()
-		if err == io.EOF {
-			// 客户端关闭流，结束循环
-			return nil
-		}
-		if err != nil {
-			log.Printf("Error receiving data: %v", err)
-			return err
-		}
-
-		// 在这里可以根据需要处理接收到的二进制数据
-		// 在本示例中，我们将接收到的数据直接打印出来
-		log.Printf("Received binary data: %v", data.Data)
-
-		// 在这里可以根据需要处理数据，然后将数据发送回客户端
-		// 在本示例中，我们将接收到的数据原样发送回客户端
-		if err := stream.Send(data); err != nil {
-			log.Printf("Error sending data: %v", err)
-			return err
-		}
+func handle(stream gate.Service_BidirectionalBinaryDataServer, data []byte) error {
+	unserializedPacket, err := msg.Unmarshal(data)
+	if err != nil {
+		xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+		return err
 	}
+	xrlog.GetInstance().Trace(unserializedPacket.Header, unserializedPacket.Message)
+
+	// 根据请求类型选择处理逻辑
+	switch req := unserializedPacket.Message.(type) {
+	case *gate.RegisterReq:
+		xrlog.GetInstance().Trace("Received RegisterReq:", req.String(), stream)
+		// 处理 RegisterReq
+		err = grpcstream.GetInstance().Add(req.GetServiceKey().GetServiceID(), stream)
+		if err != nil {
+			xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+			return err
+		}
+		//组包
+		resPacket := &xrpb.UnserializedPacket{
+			Header: &msg.Header{
+				MessageID: gate.RegisterRes_CMD,
+				ResultID:  0,
+			},
+			Message: &gate.RegisterRes{},
+		}
+		sendData := pkg_proto.BinaryData{}
+		sendData.Data, err = msg.Marshal(resPacket)
+		//回包
+		if err = stream.Send(&sendData); err != nil {
+			xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+			return err
+		}
+	case *gate.LogoutReq:
+		xrlog.GetInstance().Trace("Received LogoutReq:", req.String(), stream)
+		// 处理 LogoutReq
+		//删除client
+		err = grpcstream.GetInstance().Del(stream)
+		if err != nil {
+			xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+			return err
+		}
+		//组包
+		resPacket := &xrpb.UnserializedPacket{
+			Header: &msg.Header{
+				MessageID: gate.LogoutRes_CMD,
+				ResultID:  0,
+			},
+			Message: &gate.LogoutRes{},
+		}
+		sendData := pkg_proto.BinaryData{}
+		sendData.Data, err = msg.Marshal(resPacket)
+		//回包
+		if err = stream.Send(&sendData); err != nil {
+			xrlog.GetInstance().Fatal(err, xrutil.GetCodeLocation(1))
+			return err
+		}
+	default:
+		xrlog.GetInstance().Fatal(xrerror.MessageIDNonExistent, xrutil.GetCodeLocation(1))
+		return xrerror.MessageIDNonExistent
+	}
+	return nil
 }
