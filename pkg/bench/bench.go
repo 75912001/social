@@ -11,7 +11,6 @@ import (
 	xrerror "social/pkg/lib/error"
 	xrlog "social/pkg/lib/log"
 	xrutil "social/pkg/lib/util"
-	"social/pkg/server"
 	"sync"
 	"time"
 )
@@ -129,7 +128,7 @@ func (p *mgr) Parse(pathFile string) error {
 	if len(p.Etcd.Key) == 0 {
 		p.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
 			common.ProjectName, pkg.EtcdWatchMsgTypeService,
-			server.GetInstance().ZoneID, server.GetInstance().ServiceName, server.GetInstance().ServiceID)
+			pkg.GZoneID, pkg.GServiceName, pkg.GServiceID)
 	}
 	if len(p.Etcd.Value.ServiceNetTCP.IP) == 0 {
 		p.Etcd.Value.ServiceNetTCP.IP = p.Server.IP
