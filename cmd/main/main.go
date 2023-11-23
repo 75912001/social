@@ -9,6 +9,7 @@ import (
 	"social/cmd/interaction"
 	"social/cmd/notification"
 	"social/cmd/recommendation"
+	"social/pkg"
 	xrlog "social/pkg/lib/log"
 	"social/pkg/server"
 	"strconv"
@@ -27,20 +28,20 @@ func main() {
 			xrlog.PrintErr("zoneID err", err)
 			return
 		}
-		server.GetInstance().ZoneID = uint32(zoneID)
+		pkg.GZoneID = uint32(zoneID)
 	}
-	server.GetInstance().ServiceName = args[2]
+	pkg.GServiceName = args[2]
 	{
 		serviceID, err := strconv.ParseUint(args[3], 10, 32)
 		if err != nil {
 			xrlog.PrintErr("serviceID err", err)
 			return
 		}
-		server.GetInstance().ServiceID = uint32(serviceID)
+		pkg.GServiceID = uint32(serviceID)
 	}
-	xrlog.PrintInfo(server.GetInstance().ZoneID, server.GetInstance().ServiceName, server.GetInstance().ServiceID)
+	xrlog.PrintInfo(pkg.GZoneID, pkg.GServiceName, pkg.GServiceID)
 	var s server.IServer
-	switch server.GetInstance().ServiceName {
+	switch pkg.GServiceName {
 	case server.NameGate:
 		s = &gate.Server{}
 	case server.NameFriend:
@@ -56,16 +57,16 @@ func main() {
 	case server.NameCleansing:
 		s = &cleansing.Server{}
 	default:
-		xrlog.PrintErr("service name err", server.GetInstance().ServiceName)
+		xrlog.PrintErr("service name err", pkg.GServiceName)
 		return
 	}
 	err := s.Start()
 	if err != nil {
-		xrlog.PrintErr("service name err", server.GetInstance().ServiceName, err)
+		xrlog.PrintErr("service name err", pkg.GServiceName, err)
 	}
 	err = s.Stop()
 	if err != nil {
-		xrlog.PrintErr("service name err", server.GetInstance().ServiceName, err)
+		xrlog.PrintErr("service name err", pkg.GServiceName, err)
 	}
 	return
 }
