@@ -11,7 +11,7 @@ import (
 	xrpb "social/pkg/lib/pb"
 	xrutil "social/pkg/lib/util"
 	"social/pkg/msg"
-	pkg_proto "social/pkg/proto"
+	pkgproto "social/pkg/proto"
 	"social/pkg/proto/gate"
 )
 
@@ -85,6 +85,7 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalB
 			return err
 		}
 	}
+	return nil
 }
 
 func handle(stream gate.Service_BidirectionalBinaryDataServer, data []byte) error {
@@ -113,7 +114,7 @@ func handle(stream gate.Service_BidirectionalBinaryDataServer, data []byte) erro
 			},
 			Message: &gate.RegisterRes{},
 		}
-		sendData := pkg_proto.BinaryData{}
+		sendData := pkgproto.BinaryData{}
 		sendData.Data, err = msg.Marshal(resPacket)
 		//回包
 		if err = stream.Send(&sendData); err != nil {
@@ -137,7 +138,7 @@ func handle(stream gate.Service_BidirectionalBinaryDataServer, data []byte) erro
 			},
 			Message: &gate.LogoutRes{},
 		}
-		sendData := pkg_proto.BinaryData{}
+		sendData := pkgproto.BinaryData{}
 		sendData.Data, err = msg.Marshal(resPacket)
 		//回包
 		if err = stream.Send(&sendData); err != nil {
