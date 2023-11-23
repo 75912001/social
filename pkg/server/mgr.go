@@ -38,10 +38,6 @@ func GetInstance() *mgr {
 }
 
 type mgr struct {
-	ZoneID      uint32 // 区域ID
-	ServiceName string // 服务
-	ServiceID   uint32 // 服务ID
-
 	Opt *Options
 
 	TimeMgr xrutil.TimeMgr
@@ -101,7 +97,7 @@ func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
 		xrlog.NewOptions().
 			SetLevel(xrlog.Level(bench.GetInstance().Base.LogLevel)).
 			SetAbsPath(bench.GetInstance().Base.LogAbsPath).
-			SetNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
+			SetNamePrefix(fmt.Sprintf("%v-%v-%v", pkg.GZoneID, pkg.GServiceName, pkg.GServiceID)),
 	)
 	if err != nil {
 		return errors.Errorf("log Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
@@ -156,7 +152,7 @@ func (p *mgr) PostInit(ctx context.Context, opts ...*Options) error {
 	}
 	// 启动Etcd
 	bench.GetInstance().Etcd.Key = fmt.Sprintf("/%v/%v/%v/%v/%v",
-		common.ProjectName, pkg.EtcdWatchMsgTypeService, p.ZoneID, p.ServiceName, p.ServiceID)
+		common.ProjectName, pkg.EtcdWatchMsgTypeService, pkg.GZoneID, pkg.GServiceName, pkg.GServiceID)
 	err = etcd.Start(&bench.GetInstance().Etcd, p.BusChannel, p.Opt.EtcdHandler)
 	if err != nil {
 		return errors.Errorf("Etcd start err:%v %v", err, xrutil.GetCodeLocation(1).String())
