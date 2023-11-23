@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// c <-> gate 之间通过的用户消息[0x1000,0x1fff]
 type RegisterReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
