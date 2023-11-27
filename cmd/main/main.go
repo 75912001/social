@@ -56,6 +56,9 @@ func main() {
 		s = &recommendation.Server{}
 	case server.NameCleansing:
 		s = &cleansing.Server{}
+	case server.NameRobot:
+		//todo menglingchao
+		//s = &robot.Server{}
 	default:
 		xrlog.PrintErr("service name err", pkg.GServiceName)
 		return
