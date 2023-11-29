@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"os"
-	"social/cmd/blog"
-	"social/cmd/cleansing"
-	"social/cmd/friend"
-	"social/cmd/gate"
-	"social/cmd/interaction"
-	"social/cmd/notification"
-	"social/cmd/recommendation"
+	"social/internal/blog"
+	"social/internal/cleansing"
+	"social/internal/friend"
+	"social/internal/gate"
+	"social/internal/interaction"
+	"social/internal/notification"
+	"social/internal/recommendation"
+	"social/internal/robot"
 	"social/pkg"
 	xrlog "social/pkg/lib/log"
 	"social/pkg/server"
@@ -40,34 +42,32 @@ func main() {
 		pkg.GServiceID = uint32(serviceID)
 	}
 	xrlog.PrintInfo(pkg.GZoneID, pkg.GServiceName, pkg.GServiceID)
-	var s server.IServer
 	switch pkg.GServiceName {
 	case server.NameGate:
-		s = &gate.Server{}
+		server.GetInstance().Server = &gate.Server{}
 	case server.NameFriend:
-		s = &friend.Server{}
+		server.GetInstance().Server = &friend.Server{}
 	case server.NameInteraction:
-		s = &interaction.Server{}
+		server.GetInstance().Server = &interaction.Server{}
 	case server.NameNotification:
-		s = &notification.Server{}
+		server.GetInstance().Server = &notification.Server{}
 	case server.NameBlog:
-		s = &blog.Server{}
+		server.GetInstance().Server = &blog.Server{}
 	case server.NameRecommendation:
-		s = &recommendation.Server{}
+		server.GetInstance().Server = &recommendation.Server{}
 	case server.NameCleansing:
-		s = &cleansing.Server{}
+		server.GetInstance().Server = &cleansing.Server{}
 	case server.NameRobot:
-		//todo menglingchao
-		//s = &robot.Server{}
+		server.GetInstance().Server = &robot.Server{}
 	default:
 		xrlog.PrintErr("service name err", pkg.GServiceName)
 		return
 	}
-	err := s.Start()
+	err := server.GetInstance().Server.Start(context.Background())
 	if err != nil {
 		xrlog.PrintErr("service name err", pkg.GServiceName, err)
 	}
-	err = s.Stop()
+	err = server.GetInstance().Server.Stop(context.Background())
 	if err != nil {
 		xrlog.PrintErr("service name err", pkg.GServiceName, err)
 	}
