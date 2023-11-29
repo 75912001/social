@@ -38,19 +38,17 @@ func GetInstance() *mgr {
 }
 
 type mgr struct {
-	Opt *Options
-
+	Server  IServer
+	Opt     *Options
 	TimeMgr xrutil.TimeMgr
 
 	BusChannel          chan interface{} //  总线 channel
 	BusChannelWaitGroup sync.WaitGroup
 
-	//
+	status Status
 
-	status uint32
-
-	//服务中,如果有需要终止服务,则 QuitChan<-true
-	QuitChan chan bool
+	//服务中,如果有需要终止服务,则 QuitChan<-struct{}{}
+	QuitChan chan struct{}
 	// 检查总线channel
 	checkBusChan chan struct{}
 }
@@ -58,7 +56,7 @@ type mgr struct {
 // PreInit 初始化之前的操作
 func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
 	p.checkBusChan = make(chan struct{}, 1)
-	p.QuitChan = make(chan bool)
+	p.QuitChan = make(chan struct{}, 1)
 
 	rand.Seed(time.Now().UnixNano())
 	p.TimeMgr.Update()
@@ -93,7 +91,7 @@ func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
 	xrlog.PrintfInfo("go max process new:%v, previous setting:%v",
 		bench.GetInstance().Base.GoMaxProcess, previous)
 	// log
-	err = xrlog.GetInstance().Start(context.TODO(),
+	err = xrlog.GetInstance().Start(ctx,
 		xrlog.NewOptions().
 			SetLevel(xrlog.Level(bench.GetInstance().Base.LogLevel)).
 			SetAbsPath(bench.GetInstance().Base.LogAbsPath).
@@ -129,7 +127,7 @@ func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
 
 	// 全局定时器
 	if bench.GetInstance().Timer.ScanSecondDuration != nil || bench.GetInstance().Timer.ScanMillisecondDuration != nil {
-		err = xrtimer.GetInstance().Start(context.TODO(),
+		err = xrtimer.GetInstance().Start(ctx,
 			xrtimer.NewOptions().
 				SetScanSecondDuration(bench.GetInstance().Timer.ScanSecondDuration).
 				SetScanMillisecondDuration(bench.GetInstance().Timer.ScanMillisecondDuration).
@@ -138,17 +136,6 @@ func (p *mgr) PreInit(ctx context.Context, opts ...*Options) error {
 		if err != nil {
 			return errors.Errorf("timer Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
 		}
-	}
-
-	runtime.GC()
-	return nil
-}
-
-func (p *mgr) PostInit(ctx context.Context, opts ...*Options) error {
-	p.Opt = mergeOptions(opts...)
-	err := configure(p.Opt)
-	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
 	}
 	// 启动Etcd
 	bench.GetInstance().Etcd.Key = fmt.Sprintf("/%v/%v/%v/%v/%v",
@@ -174,6 +161,7 @@ func (p *mgr) PostInit(ctx context.Context, opts ...*Options) error {
 	}
 	serviceInformationPrintingStart()
 	runtime.GC()
+
 	return nil
 }
 

@@ -1,6 +1,8 @@
 package server
 
+import "context"
+
 type IServer interface {
-	Start() (err error)
-	Stop() (err error)
+	Start(ctx context.Context) (err error)
+	Stop(ctx context.Context) (err error)
 }

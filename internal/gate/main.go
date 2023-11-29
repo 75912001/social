@@ -12,7 +12,6 @@ import (
 	"runtime/debug"
 	apigate "social/api/gate"
 	"social/internal/gate/handler"
-	"social/internal/gate/stop"
 	"social/pkg"
 	"social/pkg/bench"
 	"social/pkg/common"
@@ -24,33 +23,12 @@ import (
 	"syscall"
 )
 
-type Server struct {
-}
+type Server struct{}
 
-func (p *Server) Stop() (err error) {
-	xrlog.PrintErr("server Log stop")
-	_ = xrlog.GetInstance().Stop()
-	return nil
-}
-
-func (p *Server) Start() (err error) {
-	err = server.GetInstance().PreInit(context.TODO(),
+func (p *Server) Start(ctx context.Context) (err error) {
+	err = server.GetInstance().PreInit(ctx,
 		server.NewOptions().
-			SetDefaultHandler(handler.OnEventDefault))
-	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
-	}
-
-	// world服定时器
-	serverTimer := new(handler.ServerTimer)
-	serverTimer.Start()
-	defer func() {
-		serverTimer.Stop()
-		xrlog.GetInstance().Warn("serverTimer stop")
-	}()
-
-	err = server.GetInstance().PostInit(context.TODO(),
-		server.NewOptions().
+			SetDefaultHandler(handler.OnEventDefault).
 			SetEtcdHandler(handler.OnEventEtcd).
 			SetEtcdWatchServicePrefix(fmt.Sprintf("/%v/%v/", common.ProjectName, pkg.EtcdWatchMsgTypeService)).
 			SetEtcdWatchCommandPrefix(fmt.Sprintf("/%v/%v/%v/%v/",
@@ -61,7 +39,6 @@ func (p *Server) Start() (err error) {
 	if err != nil {
 		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
 	}
-
 	runtime.GC()
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +75,14 @@ func (p *Server) Start() (err error) {
 	//	}
 	//}()
 
+	// 服定时器
+	serverTimer := new(handler.ServerTimer)
+	serverTimer.Start()
+	defer func() {
+		serverTimer.Stop()
+		xrlog.GetInstance().Warn("serverTimer stop")
+	}()
+
 	go func() { //启动grpc服务
 		defer func() {
 			if xrutil.IsRelease() {
@@ -105,7 +90,7 @@ func (p *Server) Start() (err error) {
 					xrlog.GetInstance().Fatalf(xrconstant.GoroutinePanic, err, debug.Stack())
 				}
 			}
-			//todo menglingchao 关闭grpc服务...
+			// todo menglingchao 关闭grpc服务...
 			// p.waitGroupOutPut.Done()
 			xrlog.GetInstance().Fatalf(xrconstant.GoroutineDone)
 		}()
@@ -115,16 +100,14 @@ func (p *Server) Start() (err error) {
 			xrlog.GetInstance().Fatalf("Failed to listen: %v", err)
 		}
 
-		server := grpc.NewServer()
-		gate.RegisterServiceServer(server, &apigate.Server{})
+		newServer := grpc.NewServer()
+		gate.RegisterServiceServer(newServer, &apigate.Server{})
 
 		xrlog.GetInstance().Tracef("Server is running on %v", addr)
-		if err = server.Serve(listen); err != nil {
+		if err = newServer.Serve(listen); err != nil {
 			xrlog.GetInstance().Fatalf("Failed to serve: %v", err)
 		}
 	}()
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// 退出服务
 	sigChan := make(chan os.Signal, 1)
@@ -136,9 +119,19 @@ func (p *Server) Start() (err error) {
 	case s := <-sigChan:
 		xrlog.GetInstance().Warnf("GServer got signal: %s, shutting down...", s)
 	}
+	return nil
+}
 
-	stop.PreStop()
+func (p *Server) Stop(ctx context.Context) (err error) {
+	{ // todo menglingchao 关机前处理...
+		// todo menglingchao 关闭grpc服务 拒绝新连接
+		xrlog.GetInstance().Warn("grpc Service stop")
+	}
+	// 设置为关闭中
+	server.GetInstance().SetStopping()
 	_ = server.GetInstance().Stop()
 
+	xrlog.PrintErr("server Log stop")
+	_ = xrlog.GetInstance().Stop()
 	return nil
 }
