@@ -7,25 +7,25 @@ import (
 	"sync/atomic"
 )
 
-type Status uint32 //服务状态
+type status uint32 //服务状态
 
 const (
-	StatusRunning  Status = 0 // 运行中
-	StatusStopping Status = 1 // 关闭中
+	StatusRunning  status = 0 // 运行中
+	StatusStopping status = 1 // 关闭中
 )
 
 // IsStopping 服务是否关闭中
-func (p *mgr) IsStopping() bool {
-	return Status(atomic.LoadUint32((*uint32)(&p.status))) == StatusStopping
+func (p *Normal) IsStopping() bool {
+	return status(atomic.LoadUint32((*uint32)(&p.status))) == StatusStopping
 }
 
 // IsRunning 服务是否运行中
-func (p *mgr) IsRunning() bool {
-	return Status(atomic.LoadUint32((*uint32)(&p.status))) == StatusRunning
+func (p *Normal) IsRunning() bool {
+	return status(atomic.LoadUint32((*uint32)(&p.status))) == StatusRunning
 }
 
 // SetStopping 设置为关闭中
-func (p *mgr) SetStopping() {
+func (p *Normal) SetStopping() {
 	atomic.StoreUint32((*uint32)(&p.status), uint32(StatusStopping))
 }
 
@@ -33,7 +33,7 @@ func (p *mgr) SetStopping() {
 //
 //	NOTE 有性能影响.
 //	建议 只在调试/测试时使用.
-func (p *mgr) ServiceInfo() string {
+func (p *Normal) ServiceInfo() string {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
