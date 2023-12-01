@@ -27,21 +27,147 @@ import (
 	"time"
 )
 
+func NewNormal() *Normal {
+	normal := new(Normal)
+
+	normal.BenchMgr = bench.GetInstance()
+	normal.TimeMgr = &xrutil.TimeMgr{}
+	normal.TimerMgr = xrtimer.GetInstance()
+	normal.LogMgr = xrlog.GetInstance()
+	normal.EtcdMgr = xretcd.GetInstance()
+
+	return normal
+}
+
 type Normal struct {
 	Options     *options
 	ZoneID      uint32 // 区域ID
 	ServiceName string // 服务
 	ServiceID   uint32 // 服务ID
-	TimeMgr     xrutil.TimeMgr
-	TimerMgr    *xrtimer.Mgr
-	LogMgr      *xrlog.Mgr
-	EtcdMgr     *xretcd.Mgr
+
+	BenchMgr *bench.Mgr
+	TimeMgr  *xrutil.TimeMgr
+	TimerMgr *xrtimer.Mgr
+	LogMgr   *xrlog.Mgr
+	EtcdMgr  *xretcd.Mgr
 
 	busChannel          chan interface{} //总线 channel
 	busChannelWaitGroup sync.WaitGroup
 	busCheckChan        chan struct{} // 检查总线channel,触发检查总线中的数据是否为0,且服务status == StatusStopping
 	status              status        //服务状态
 	exitChan            chan struct{}
+}
+
+func (p *Normal) Init(ctx context.Context, opts ...*options) error {
+	p.busCheckChan = make(chan struct{}, 1)
+	p.exitChan = make(chan struct{}, 1)
+
+	rand.Seed(time.Now().UnixNano())
+	p.TimeMgr.Update()
+	// 小端
+	if !xrutil.IsLittleEndian() {
+		return errors.Errorf("system is bigEndian! %v", xrutil.GetCodeLocation(1).String())
+	}
+	// 开启UUID随机
+	uuid.EnableRandPool()
+	// 初始化 错误码
+	if err := ec.Init(); err != nil {
+		return errors.Errorf("ec Start err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	}
+	p.Options = mergeOptions(opts...)
+	err := configure(p.Options)
+	if err != nil {
+		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+	}
+	// 加载配置文件 bench.json 公共部分
+	// 当前目录
+	pathValue, err := xrutil.GetCurrentPath()
+	if err != nil {
+		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+	}
+	benchPath := path.Join(pathValue, *p.Options.benchPath)
+	err = bench.GetInstance().Parse(benchPath)
+	if err != nil {
+		return errors.Errorf("Bench Load err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	}
+	if len(bench.GetInstance().Etcd.Key) == 0 {
+		bench.GetInstance().Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
+			common.ProjectName, etcd.WatchMsgTypeService,
+			p.ZoneID, p.ServiceName, p.ServiceID)
+	}
+	if bench.GetInstance().Etcd.TTL == 0 {
+		bench.GetInstance().Etcd.TTL = etcd.TtlSecondDefault
+	}
+	if len(bench.GetInstance().Base.LogAbsPath) == 0 {
+		bench.GetInstance().Base.LogAbsPath = common.LogAbsPath
+	}
+	//GoMaxProcess
+	previous := runtime.GOMAXPROCS(bench.GetInstance().Base.GoMaxProcess)
+	xrlog.PrintfInfo("go max process new:%v, previous setting:%v",
+		bench.GetInstance().Base.GoMaxProcess, previous)
+	// log
+	err = p.LogMgr.Start(ctx,
+		xrlog.NewOptions().
+			SetLevel(xrlog.Level(bench.GetInstance().Base.LogLevel)).
+			SetAbsPath(bench.GetInstance().Base.LogAbsPath).
+			SetNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
+	)
+	if err != nil {
+		return errors.Errorf("log Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
+	}
+	// 加载配置文件 bench.json 私有部分
+	if p.Options.subBench != nil {
+		err = p.Options.subBench.Load(benchPath)
+		if err != nil {
+			return errors.Errorf("GSubBench Load err:%v %v", err, xrutil.GetCodeLocation(1).String())
+		}
+	}
+	// eventChan
+	p.busChannel = make(chan interface{}, bench.GetInstance().Base.BusChannelNumber)
+	go func() {
+		defer func() {
+			// 主事件channel报错 不recover
+			p.LogMgr.Fatalf(xrconstant.GoroutineDone)
+		}()
+		p.busChannelWaitGroup.Add(1)
+		defer p.busChannelWaitGroup.Done()
+
+		p.HandleBus()
+	}()
+	// 是否开启http采集分析
+	if 0 < bench.GetInstance().Base.PprofHttpPort {
+		xrpprof.StartHTTPprof(fmt.Sprintf("0.0.0.0:%d", bench.GetInstance().Base.PprofHttpPort))
+	}
+	// 全局定时器
+	err = p.TimerMgr.Start(ctx,
+		xrtimer.NewOptions().
+			SetScanSecondDuration(bench.GetInstance().Timer.ScanSecondDuration).
+			SetScanMillisecondDuration(bench.GetInstance().Timer.ScanMillisecondDuration).
+			SetTimerOutChan(p.busChannel),
+	)
+	if err != nil {
+		return errors.Errorf("timer Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
+	}
+	// 启动Etcd
+	err = etcd.Start(&bench.GetInstance().Etcd, p.busChannel, p.Options.etcdHandler)
+	if err != nil {
+		return errors.Errorf("Etcd start err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	}
+	// etcd 关注 服务 首次启动服务需要拉取一次
+	if err = p.EtcdMgr.WatchPrefixIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
+		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	}
+	if err = p.EtcdMgr.GetPrefixIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
+		return errors.Errorf("EtcdGetPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	}
+	// etcd 关注 命令
+	if err = p.EtcdMgr.WatchPrefixIntoChan(*p.Options.etcdWatchCommandPrefix); err != nil {
+		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	}
+	p.serviceInformationPrintingStart()
+	runtime.GC()
+
+	return nil
 }
 
 func (p *Normal) Start(ctx context.Context) error {
@@ -106,121 +232,6 @@ func (p *Normal) Stop(ctx context.Context) error {
 func (p *Normal) Exit() {
 	p.LogMgr.Warn("server Exit")
 	p.exitChan <- struct{}{}
-}
-
-func (p *Normal) Init(ctx context.Context, opts ...*options) error {
-	p.busCheckChan = make(chan struct{}, 1)
-	p.exitChan = make(chan struct{}, 1)
-
-	rand.Seed(time.Now().UnixNano())
-	p.TimeMgr.Update()
-	// 小端
-	if !xrutil.IsLittleEndian() {
-		return errors.Errorf("system is bigEndian! %v", xrutil.GetCodeLocation(1).String())
-	}
-	// 开启UUID随机
-	uuid.EnableRandPool()
-	// 初始化 错误码
-	if err := ec.Init(); err != nil {
-		return errors.Errorf("ec Start err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	p.Options = mergeOptions(opts...)
-	err := configure(p.Options)
-	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
-	}
-	// 加载配置文件 bench.json 公共部分
-	// 当前目录
-	pathValue, err := xrutil.GetCurrentPath()
-	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
-	}
-	benchPath := path.Join(pathValue, *p.Options.benchPath)
-	err = bench.GetInstance().Parse(benchPath)
-	if err != nil {
-		return errors.Errorf("Bench Load err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	if len(bench.GetInstance().Etcd.Key) == 0 {
-		bench.GetInstance().Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
-			common.ProjectName, etcd.WatchMsgTypeService,
-			p.ZoneID, p.ServiceName, p.ServiceID)
-	}
-	if bench.GetInstance().Etcd.TTL == 0 {
-		bench.GetInstance().Etcd.TTL = etcd.TtlSecondDefault
-	}
-	if len(bench.GetInstance().Base.LogAbsPath) == 0 {
-		bench.GetInstance().Base.LogAbsPath = common.LogAbsPath
-	}
-	//GoMaxProcess
-	previous := runtime.GOMAXPROCS(bench.GetInstance().Base.GoMaxProcess)
-	xrlog.PrintfInfo("go max process new:%v, previous setting:%v",
-		bench.GetInstance().Base.GoMaxProcess, previous)
-	// log
-	p.LogMgr = xrlog.GetInstance()
-	err = p.LogMgr.Start(ctx,
-		xrlog.NewOptions().
-			SetLevel(xrlog.Level(bench.GetInstance().Base.LogLevel)).
-			SetAbsPath(bench.GetInstance().Base.LogAbsPath).
-			SetNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
-	)
-	if err != nil {
-		return errors.Errorf("log Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
-	}
-	// 加载配置文件 bench.json 私有部分
-	if p.Options.subBench != nil {
-		err = p.Options.subBench.Load(benchPath)
-		if err != nil {
-			return errors.Errorf("GSubBench Load err:%v %v", err, xrutil.GetCodeLocation(1).String())
-		}
-	}
-	// eventChan
-	p.busChannel = make(chan interface{}, bench.GetInstance().Base.BusChannelNumber)
-	go func() {
-		defer func() {
-			// 主事件channel报错 不recover
-			p.LogMgr.Fatalf(xrconstant.GoroutineDone)
-		}()
-		p.busChannelWaitGroup.Add(1)
-		defer p.busChannelWaitGroup.Done()
-
-		p.HandleBus()
-	}()
-	// 是否开启http采集分析
-	if 0 < bench.GetInstance().Base.PprofHttpPort {
-		xrpprof.StartHTTPprof(fmt.Sprintf("0.0.0.0:%d", bench.GetInstance().Base.PprofHttpPort))
-	}
-	// 全局定时器
-	p.TimerMgr = xrtimer.GetInstance()
-	err = p.TimerMgr.Start(ctx,
-		xrtimer.NewOptions().
-			SetScanSecondDuration(bench.GetInstance().Timer.ScanSecondDuration).
-			SetScanMillisecondDuration(bench.GetInstance().Timer.ScanMillisecondDuration).
-			SetTimerOutChan(p.busChannel),
-	)
-	if err != nil {
-		return errors.Errorf("timer Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
-	}
-	// 启动Etcd
-	p.EtcdMgr = xretcd.GetInstance()
-	err = etcd.Start(&bench.GetInstance().Etcd, p.busChannel, p.Options.etcdHandler)
-	if err != nil {
-		return errors.Errorf("Etcd start err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	// etcd 关注 服务 首次启动服务需要拉取一次
-	if err = p.EtcdMgr.WatchPrefixIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
-		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	if err = p.EtcdMgr.GetPrefixIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
-		return errors.Errorf("EtcdGetPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	// etcd 关注 命令
-	if err = p.EtcdMgr.WatchPrefixIntoChan(*p.Options.etcdWatchCommandPrefix); err != nil {
-		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	p.serviceInformationPrintingStart()
-	runtime.GC()
-
-	return nil
 }
 
 func (p *Normal) serviceInformationPrintingStart() {
