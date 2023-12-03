@@ -4,13 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"path"
-	"social/pkg/bench"
-	xretcd "social/pkg/lib/etcd"
-	xrutil "social/pkg/lib/util"
+	pkgbench "social/pkg/bench"
+	libetcd "social/pkg/lib/etcd"
+	libutil "social/pkg/lib/util"
 	"time"
 
 	"github.com/pkg/errors"
 )
+
+const WatchMsgTypeService string = "service"
+const WatchMsgTypeCommand string = "command"
+
+const TtlSecondDefault int64 = 33 //默认TTL时间 秒
 
 // Parse
 // e.g.:/objectName/service/${zoneID}/${serviceName}/${serviceID}
@@ -30,35 +35,32 @@ func Parse(key string) (msgType string, zoneID string, serviceName string, servi
 }
 
 // Start 启动Etcd
-func Start(conf *bench.Etcd, BusChannel chan interface{}, onFunc xretcd.OnFunc) error {
-	if len(conf.Addrs) == 0 {
-		return nil
-	}
+func Start(conf *pkgbench.Etcd, BusChannel chan interface{}, onFunc libetcd.OnFunc) error {
 	etcdValue, err := json.Marshal(conf.Value)
 	if err != nil {
-		return errors.WithMessagef(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessagef(err, libutil.GetCodeLocation(1).String())
 	}
-	var kvSlice []xretcd.KV
-	kvSlice = append(kvSlice, xretcd.KV{
+	var kvSlice []libetcd.KV
+	kvSlice = append(kvSlice, libetcd.KV{
 		Key:   conf.Key,
 		Value: string(etcdValue),
 	})
-	err = xretcd.GetInstance().Start(context.TODO(),
-		xretcd.NewOptions().
+	err = libetcd.GetInstance().Start(context.TODO(),
+		libetcd.NewOptions().
 			SetAddrs(conf.Addrs).
 			SetTTL(conf.TTL).
 			SetDialTimeout(5*time.Second).
 			SetKV(kvSlice).SetOnFunc(onFunc).
-			SetEventChan(BusChannel),
+			SetOutgoingEventChan(BusChannel),
 	)
 	if err != nil {
-		return errors.WithMessagef(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessagef(err, libutil.GetCodeLocation(1).String())
 	}
 
 	// 续租
-	err = xretcd.GetInstance().KeepAlive(context.TODO())
+	err = libetcd.GetInstance().KeepAlive(context.TODO())
 	if err != nil {
-		return errors.WithMessagef(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessagef(err, libutil.GetCodeLocation(1).String())
 	}
 
 	return nil
