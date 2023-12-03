@@ -1,8 +1,12 @@
 package cleansing
 
-import "context"
+import (
+	"context"
+	pkgserver "social/pkg/server"
+)
 
 type Server struct {
+	*pkgserver.Normal
 }
 
 func (p *Server) Stop(ctx context.Context) (err error) {
