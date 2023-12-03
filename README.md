@@ -48,6 +48,34 @@ windows
     
     运行 social/scripts/proto/gen.sh
 
+## etcd 部署(单例)
+
+    下载文件
+    https://github.com/etcd-io/etcd/releases/tag/v3.5.0-rc.0
+#
+    tar xzf etcd-v3.5.0-rc.0-linux-amd64.tar.gz
+    sudo mkdir -p /usr/local/etcd
+    sudo cp etcd-v3.5.0-rc.0-linux-amd64/etcd /usr/local/etcd/
+    sudo cp etcd-v3.5.0-rc.0-linux-amd64/etcdctl /usr/local/etcd/
+    sudo cp etcd-v3.5.0-rc.0-linux-amd64/etcdutl /usr/local/etcd/
+#
+    设置环境变量
+    vi .bashrc
+    export ETCD_LISTEN_CLIENT_URLS=http://192.168.31.14:2379
+    export ETCD_ADVERTISE_CLIENT_URLS=http://192.168.31.14:2379
+    source .bashrc
+#
+    启动服务
+    nohup /usr/local/etcd/etcd > /dev/null 2>&1 &
+#
+    使用
+    增
+    /usr/local/etcd/etcdctl --endpoints=192.168.31.54:2379 put /test "Hello etcd"
+    查
+    /usr/local/etcd/etcdctl --endpoints=192.168.31.54:2379 get --prefix /
+    删
+    /usr/local/etcd/etcdctl --endpoints=192.168.31.54:2379 del --prev-kv --prefix /
+
 # 目录说明
 
 ##
@@ -91,5 +119,7 @@ windows
 ├── tools       --项目工具
 └── vendor
 ```
+
+
 
 
