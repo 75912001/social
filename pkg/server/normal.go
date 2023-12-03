@@ -42,6 +42,8 @@ func GetInstance() *Normal {
 func NewNormal() *Normal {
 	normal := new(Normal)
 
+	normal.Options = &options{}
+
 	normal.BenchMgr = pkgbench.GetInstance()
 	normal.TimeMgr = libtime.GetInstance()
 	normal.TimerMgr = libtimer.GetInstance()
@@ -53,8 +55,8 @@ func NewNormal() *Normal {
 
 type Normal struct {
 	Options     *options
-	CurrentPath string // 当前路径 todo 用起来
-	ProgramName string // 程序名称 todo 用起来
+	ProgramPath string // 程序路径
+	ProgramName string // 程序名称
 	ZoneID      uint32 // 区域ID
 	ServiceName string // 服务
 	ServiceID   uint32 // 服务ID

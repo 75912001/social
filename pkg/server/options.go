@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/pkg/errors"
 	"path"
+	"path/filepath"
 	pkgbench "social/pkg/bench"
 	libetcd "social/pkg/lib/etcd"
 	libutil "social/pkg/lib/util"
@@ -108,6 +109,7 @@ func configure(opts *options) error {
 	}
 	if opts.benchPath == nil {
 		benchPath := path.Join(*opts.path, "bench.json")
+		benchPath = filepath.ToSlash(benchPath)
 		opts.benchPath = &benchPath
 	}
 	return nil
