@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"runtime/debug"
 	pkgbench "social/pkg/bench"
-	pkgcommon "social/pkg/common"
 	pkgec "social/pkg/ec"
 	pkgetcd "social/pkg/etcd"
 	libconstant "social/pkg/lib/constant"
@@ -87,20 +86,9 @@ func (p *Normal) LoadBench(ctx context.Context, opts ...*options) error {
 		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 	benchPath := path.Join(pathValue, *p.Options.benchPath)
-	err = p.BenchMgr.Parse(benchPath)
+	err = p.BenchMgr.Parse(benchPath, p.ZoneID, p.ServiceName, p.ServiceID)
 	if err != nil {
 		return errors.Errorf("Bench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
-	}
-	if len(p.BenchMgr.Etcd.Key) == 0 {
-		p.BenchMgr.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
-			pkgcommon.ProjectName, pkgetcd.WatchMsgTypeService,
-			p.ZoneID, p.ServiceName, p.ServiceID)
-	}
-	if p.BenchMgr.Etcd.TTL == 0 {
-		p.BenchMgr.Etcd.TTL = pkgetcd.TtlSecondDefault
-	}
-	if len(p.BenchMgr.Base.LogAbsPath) == 0 {
-		p.BenchMgr.Base.LogAbsPath = pkgcommon.LogAbsPath
 	}
 	// 加载配置文件 bench.json 私有部分
 	if p.Options.subBench != nil {
