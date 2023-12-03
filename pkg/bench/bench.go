@@ -130,9 +130,7 @@ func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceI
 		p.Etcd.TTL = pkgcommon.EtcdTtlSecondDefault
 	}
 	if len(p.Etcd.Key) == 0 {
-		p.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
-			pkgcommon.ProjectName, pkgcommon.EtcdWatchMsgTypeService,
-			zoneID, serviceName, serviceID)
+		p.Etcd.Key = pkgcommon.EtcdGenerateServiceKey(zoneID, serviceName, serviceID)
 	}
 	if len(p.Etcd.Value.ServiceNetTCP.IP) == 0 {
 		p.Etcd.Value.ServiceNetTCP.IP = p.Server.IP
