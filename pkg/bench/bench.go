@@ -7,7 +7,6 @@ import (
 	"math"
 	"runtime"
 	pkgcommon "social/pkg/common"
-	pkgetcd "social/pkg/etcd"
 	liberror "social/pkg/lib/error"
 	liblog "social/pkg/lib/log"
 	libutil "social/pkg/lib/util"
@@ -123,11 +122,11 @@ func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceI
 		return errors.WithMessage(liberror.Config, libutil.GetCodeLocation(1).String())
 	}
 	if p.Etcd.TTL == 0 {
-		p.Etcd.TTL = pkgetcd.TtlSecondDefault
+		p.Etcd.TTL = pkgcommon.EtcdTtlSecondDefault
 	}
 	if len(p.Etcd.Key) == 0 {
 		p.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
-			pkgcommon.ProjectName, pkgetcd.WatchMsgTypeService,
+			pkgcommon.ProjectName, pkgcommon.EtcdWatchMsgTypeService,
 			zoneID, serviceName, serviceID)
 	}
 	if len(p.Etcd.Value.ServiceNetTCP.IP) == 0 {
