@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"math"
+	"os"
 	"runtime"
 	pkgcommon "social/pkg/common"
 	liberror "social/pkg/lib/error"
@@ -62,9 +63,9 @@ type Timer struct {
 
 type Etcd struct {
 	Addrs []string      `json:"addrs"`
-	TTL   int64         `json:"ttl"`   //ttl 秒 [默认为 common.EtcdTtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒]
-	Key   string        `json:"key"`   //common.ProjectName/common.EtcdWatchMsgTypeService/zoneID/serviceName/serviceID
-	Value EtcdValueJson `json:"value"` //有:直接使用. default:{"ip":"192.168.50.10","port":3021, "version":version, "availableLoad":1000}
+	TTL   int64         `json:"ttl"`   // ttl 秒 [默认为 common.EtcdTtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒]
+	Key   string        `json:"key"`   // common.ProjectName/common.EtcdWatchMsgTypeService/zoneID/serviceName/serviceID
+	Value EtcdValueJson `json:"value"` // 有:直接使用. default:{"serviceNetTCP":{"ip":"0.0.0.0","port":5101},"version":"Beta.0.0.1","availableLoad":4294967295}
 }
 
 type EtcdValueJson struct {
@@ -86,8 +87,12 @@ func (p *Mgr) String() string {
 
 // Parse 解析, bench.json
 func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceID uint32) error {
-	if err := json.Unmarshal([]byte(pathFile), &p); err != nil {
+	if data, err := os.ReadFile(pathFile); err != nil {
 		return errors.WithMessagef(err, "%v %v", pathFile, libutil.GetCodeLocation(1).String())
+	} else {
+		if err = json.Unmarshal(data, &p); err != nil {
+			return errors.WithMessagef(err, "%v %v", pathFile, libutil.GetCodeLocation(1).String())
+		}
 	}
 	//base
 	if len(p.Base.Version) == 0 {
