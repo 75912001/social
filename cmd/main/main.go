@@ -86,6 +86,20 @@ func main() {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
+	{
+		normal.LogMgr.Fatal("Fatal")
+		normal.LogMgr.Fatalf("Fatalf %v", "Fatalf")
+		normal.LogMgr.Error("Error")
+		normal.LogMgr.Errorf("Errorf %v", "Errorf")
+		normal.LogMgr.Warn("Warn")
+		normal.LogMgr.Warnf("Warnf %v", "Warnf")
+		normal.LogMgr.Info("Info")
+		normal.LogMgr.Infof("Infof %v", "Infof")
+		normal.LogMgr.Debug("Debug")
+		normal.LogMgr.Debugf("Debugf %v", "Debugf")
+		normal.LogMgr.Trace("Trace")
+		normal.LogMgr.Tracef("Tracef %v", "Tracef")
+	}
 	err = s.Start(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
