@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	blogserver "social/internal/blog"
@@ -75,12 +74,8 @@ func main() {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 	}
 	err = s.Init(context.Background(),
-		normal.Options, pkgserver.NewOptions().SetEtcdWatchServicePrefix(fmt.Sprintf("%v/%v/", pkgcommon.ProjectName, pkgcommon.EtcdWatchMsgTypeService)).
-			SetEtcdWatchCommandPrefix(fmt.Sprintf("%v/%v/%v/%v/",
-				pkgcommon.ProjectName, pkgcommon.EtcdWatchMsgTypeCommand,
-				normal.ZoneID,
-				normal.ServiceName),
-			),
+		normal.Options, pkgserver.NewOptions().SetEtcdWatchServicePrefix(pkgcommon.EtcdGenerateWatchServicePrefix()).
+			SetEtcdWatchCommandPrefix(pkgcommon.EtcdGenerateWatchCommandPrefix(normal.ZoneID, normal.ServiceName)),
 	)
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
