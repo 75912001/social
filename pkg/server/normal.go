@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
-	"path"
 	"runtime"
 	"runtime/debug"
 	pkgbench "social/pkg/bench"
@@ -80,19 +79,13 @@ func (p *Normal) LoadBench(ctx context.Context, opts ...*options) error {
 		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 	// 加载配置文件 bench.json 公共部分
-	// 当前目录
-	pathValue, err := libutil.GetCurrentPath()
-	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
-	}
-	benchPath := path.Join(pathValue, *p.Options.benchPath)
-	err = p.BenchMgr.Parse(benchPath, p.ZoneID, p.ServiceName, p.ServiceID)
+	err = p.BenchMgr.Parse(*p.Options.benchPath, p.ZoneID, p.ServiceName, p.ServiceID)
 	if err != nil {
 		return errors.Errorf("Bench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	// 加载配置文件 bench.json 私有部分
 	if p.Options.subBench != nil {
-		err = p.Options.subBench.Load(benchPath)
+		err = p.Options.subBench.Load(*p.Options.benchPath)
 		if err != nil {
 			return errors.Errorf("SubBench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
 		}
