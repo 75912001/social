@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	blogserver "social/internal/blog"
 	cleansingserver "social/internal/cleansing"
 	friendserver "social/internal/friend"
@@ -26,6 +27,9 @@ func main() {
 		liblog.PrintErr("args len err")
 		return
 	}
+	pathName := filepath.ToSlash(args[0])
+	normal.ProgramPath = filepath.Dir(pathName)
+	normal.ProgramName = filepath.Base(pathName)
 	{
 		strZoneID, err := strconv.ParseUint(args[1], 10, 32)
 		if err != nil {
@@ -47,7 +51,7 @@ func main() {
 	var s pkgserver.IServer
 	switch normal.ServiceName {
 	case pkgserver.NameGate:
-		s = &gateserver.Server{Normal: normal}
+		s = gateserver.NewServer(normal)
 	case pkgserver.NameFriend:
 		s = &friendserver.Server{Normal: normal}
 	case pkgserver.NameInteraction:
@@ -80,22 +84,27 @@ func main() {
 	)
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
 	}
 	err = s.Start(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
 	}
 	err = s.Run(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
 	}
 	err = s.PreStop(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
 	}
 	err = s.Stop(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
 	}
 	return
 }
