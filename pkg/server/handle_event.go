@@ -1,10 +1,10 @@
 package server
 
 import (
-	xretcd "social/pkg/lib/etcd"
-	xrlog "social/pkg/lib/log"
-	xrtimer "social/pkg/lib/timer"
-	xrutil "social/pkg/lib/util"
+	libetcd "social/pkg/lib/etcd"
+	liblog "social/pkg/lib/log"
+	libtimer "social/pkg/lib/timer"
+	libutil "social/pkg/lib/util"
 	"time"
 )
 
@@ -14,27 +14,27 @@ func (p *Normal) HandleBus() {
 	for {
 		select {
 		case <-p.busCheckChan:
-			p.LogMgr.Warn("receive GCheckBusChan")
+			p.LogMgr.Warn("receive busCheckChan")
 			if 0 == len(p.busChannel) && p.IsStopping() {
-				p.LogMgr.Warn("server is stopping, stop consume GEventChan with length 0")
+				p.LogMgr.Warn("server is stopping, stop consume EventChan with length 0")
 				return
 			} else {
-				p.LogMgr.Warnf("server is stopping, waiting for consume GEventChan with length:%d", len(p.busChannel))
+				p.LogMgr.Warnf("server is stopping, waiting for consume EventChan with length:%d", len(p.busChannel))
 			}
 		case v := <-p.busChannel:
 			//TODO [*] 应拿尽拿...
 			p.TimeMgr.Update()
 			var err error
 			switch t := v.(type) {
-			case *xrtimer.Second:
+			case *libtimer.Second:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
-			case *xrtimer.Millisecond:
+			case *libtimer.Millisecond:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
-			case *xretcd.KV:
+			case *libetcd.KV:
 				err = p.EtcdMgr.Handler(t.Key, t.Value)
 			default:
 				if p.Options.defaultHandler == nil {
@@ -44,9 +44,9 @@ func (p *Normal) HandleBus() {
 				}
 			}
 			if err != nil {
-				xrlog.PrintErr(v, err)
+				liblog.PrintErr(v, err)
 			}
-			if xrutil.IsDebug() {
+			if libutil.IsDebug() {
 				dt := time.Now().Sub(p.TimeMgr.Time).Milliseconds()
 				if dt > 50 {
 					p.LogMgr.Warnf("cost time50: %v Millisecond with event type:%T", dt, v)

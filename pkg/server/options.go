@@ -3,9 +3,9 @@ package server
 import (
 	"github.com/pkg/errors"
 	"path"
-	"social/pkg/bench"
-	xretcd "social/pkg/lib/etcd"
-	xrutil "social/pkg/lib/util"
+	pkgbench "social/pkg/bench"
+	libetcd "social/pkg/lib/etcd"
+	libutil "social/pkg/lib/util"
 )
 
 type OnDefaultHandler func(v interface{}) error
@@ -15,9 +15,9 @@ type OnDefaultHandler func(v interface{}) error
 type options struct {
 	path                   *string // 路径
 	benchPath              *string // 配置文件路径
-	subBench               bench.ISubBench
+	subBench               pkgbench.ISubBench
 	defaultHandler         OnDefaultHandler // default 处理函数
-	etcdHandler            xretcd.OnFunc    // etcd 处理函数
+	etcdHandler            libetcd.OnFunc   // etcd 处理函数
 	etcdWatchServicePrefix *string          // etcd 关注 服务 前缀
 	etcdWatchCommandPrefix *string          // etcd 关注 命令 前缀
 }
@@ -38,7 +38,7 @@ func (p *options) SetBenchPath(benchPath string) *options {
 	return p
 }
 
-func (p *options) SetSubBench(subBench bench.ISubBench) *options {
+func (p *options) SetSubBench(subBench pkgbench.ISubBench) *options {
 	p.subBench = subBench
 	return p
 }
@@ -48,7 +48,7 @@ func (p *options) SetDefaultHandler(defaultHandler OnDefaultHandler) *options {
 	return p
 }
 
-func (p *options) SetEtcdHandler(etcdHandler xretcd.OnFunc) *options {
+func (p *options) SetEtcdHandler(etcdHandler libetcd.OnFunc) *options {
 	p.etcdHandler = etcdHandler
 	return p
 }
@@ -100,9 +100,9 @@ func mergeOptions(opts ...*options) *options {
 // 配置
 func configure(opts *options) error {
 	if opts.path == nil { // 当前目录
-		pathValue, err := xrutil.GetCurrentPath()
+		pathValue, err := libutil.GetCurrentPath()
 		if err != nil {
-			return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 		}
 		opts.path = &pathValue
 	}

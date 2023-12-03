@@ -5,6 +5,7 @@ import (
 )
 
 type IServer interface {
+	LoadBench(ctx context.Context, opts ...*options) error
 	Init(ctx context.Context, opts ...*options) error
 	Start(ctx context.Context) error
 	Run(ctx context.Context) error

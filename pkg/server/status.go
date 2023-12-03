@@ -29,11 +29,11 @@ func (p *Normal) SetStopping() {
 	atomic.StoreUint32((*uint32)(&p.status), uint32(StatusStopping))
 }
 
-// ServiceInfo 服务信息
+// Info 服务信息
 //
 //	NOTE 有性能影响.
 //	建议 只在调试/测试时使用.
-func (p *Normal) ServiceInfo() string {
+func (p *Normal) Info() string {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 

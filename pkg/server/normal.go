@@ -11,51 +11,105 @@ import (
 	"path"
 	"runtime"
 	"runtime/debug"
-	"social/pkg/bench"
-	"social/pkg/common"
-	"social/pkg/ec"
-	"social/pkg/etcd"
-	xrconstant "social/pkg/lib/constant"
-	xrerror "social/pkg/lib/error"
-	xretcd "social/pkg/lib/etcd"
-	xrlog "social/pkg/lib/log"
-	xrpprof "social/pkg/lib/pprof"
-	xrtimer "social/pkg/lib/timer"
-	xrutil "social/pkg/lib/util"
+	pkgbench "social/pkg/bench"
+	pkgcommon "social/pkg/common"
+	pkgec "social/pkg/ec"
+	pkgetcd "social/pkg/etcd"
+	libconstant "social/pkg/lib/constant"
+	liberror "social/pkg/lib/error"
+	libetcd "social/pkg/lib/etcd"
+	liblog "social/pkg/lib/log"
+	libpprof "social/pkg/lib/pprof"
+	libtime "social/pkg/lib/time"
+	libtimer "social/pkg/lib/timer"
+	libutil "social/pkg/lib/util"
 	"sync"
 	"syscall"
 	"time"
 )
 
+var (
+	instance *Normal
+	once     sync.Once
+)
+
+// GetInstance 获取
+func GetInstance() *Normal {
+	once.Do(func() {
+		instance = NewNormal()
+	})
+	return instance
+}
+
 func NewNormal() *Normal {
 	normal := new(Normal)
 
-	normal.BenchMgr = bench.GetInstance()
-	normal.TimeMgr = &xrutil.TimeMgr{}
-	normal.TimerMgr = xrtimer.GetInstance()
-	normal.LogMgr = xrlog.GetInstance()
-	normal.EtcdMgr = xretcd.GetInstance()
+	normal.BenchMgr = pkgbench.GetInstance()
+	normal.TimeMgr = libtime.GetInstance()
+	normal.TimerMgr = libtimer.GetInstance()
+	normal.LogMgr = liblog.GetInstance()
+	normal.EtcdMgr = libetcd.GetInstance()
 
 	return normal
 }
 
 type Normal struct {
 	Options     *options
+	CurrentPath string // 当前路径 todo 用起来
+	ProgramName string // 程序名称 todo 用起来
 	ZoneID      uint32 // 区域ID
 	ServiceName string // 服务
 	ServiceID   uint32 // 服务ID
 
-	BenchMgr *bench.Mgr
-	TimeMgr  *xrutil.TimeMgr
-	TimerMgr *xrtimer.Mgr
-	LogMgr   *xrlog.Mgr
-	EtcdMgr  *xretcd.Mgr
+	BenchMgr *pkgbench.Mgr
+	TimeMgr  *libtime.Mgr
+	TimerMgr *libtimer.Mgr
+	LogMgr   *liblog.Mgr
+	EtcdMgr  *libetcd.Mgr
 
 	busChannel          chan interface{} //总线 channel
 	busChannelWaitGroup sync.WaitGroup
 	busCheckChan        chan struct{} // 检查总线channel,触发检查总线中的数据是否为0,且服务status == StatusStopping
 	status              status        //服务状态
 	exitChan            chan struct{}
+}
+
+func (p *Normal) LoadBench(ctx context.Context, opts ...*options) error {
+	p.Options = mergeOptions(opts...)
+	err := configure(p.Options)
+	if err != nil {
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+	}
+	// 加载配置文件 bench.json 公共部分
+	// 当前目录
+	pathValue, err := libutil.GetCurrentPath()
+	if err != nil {
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+	}
+	benchPath := path.Join(pathValue, *p.Options.benchPath)
+	err = p.BenchMgr.Parse(benchPath)
+	if err != nil {
+		return errors.Errorf("Bench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
+	}
+	if len(p.BenchMgr.Etcd.Key) == 0 {
+		p.BenchMgr.Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
+			pkgcommon.ProjectName, pkgetcd.WatchMsgTypeService,
+			p.ZoneID, p.ServiceName, p.ServiceID)
+	}
+	if p.BenchMgr.Etcd.TTL == 0 {
+		p.BenchMgr.Etcd.TTL = pkgetcd.TtlSecondDefault
+	}
+	if len(p.BenchMgr.Base.LogAbsPath) == 0 {
+		p.BenchMgr.Base.LogAbsPath = pkgcommon.LogAbsPath
+	}
+	// 加载配置文件 bench.json 私有部分
+	if p.Options.subBench != nil {
+		err = p.Options.subBench.Load(benchPath)
+		if err != nil {
+			return errors.Errorf("SubBench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
+		}
+	}
+	return nil
 }
 
 func (p *Normal) Init(ctx context.Context, opts ...*options) error {
@@ -65,69 +119,41 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	rand.Seed(time.Now().UnixNano())
 	p.TimeMgr.Update()
 	// 小端
-	if !xrutil.IsLittleEndian() {
-		return errors.Errorf("system is bigEndian! %v", xrutil.GetCodeLocation(1).String())
+	if !libutil.IsLittleEndian() {
+		return errors.Errorf("system is bigEndian! %v", libutil.GetCodeLocation(1).String())
 	}
 	// 开启UUID随机
 	uuid.EnableRandPool()
 	// 初始化 错误码
-	if err := ec.Init(); err != nil {
-		return errors.Errorf("ec Start err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	if err := pkgec.Init(); err != nil {
+		return errors.Errorf("ec Start err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	p.Options = mergeOptions(opts...)
 	err := configure(p.Options)
 	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
-	}
-	// 加载配置文件 bench.json 公共部分
-	// 当前目录
-	pathValue, err := xrutil.GetCurrentPath()
-	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
-	}
-	benchPath := path.Join(pathValue, *p.Options.benchPath)
-	err = bench.GetInstance().Parse(benchPath)
-	if err != nil {
-		return errors.Errorf("Bench Load err:%v %v", err, xrutil.GetCodeLocation(1).String())
-	}
-	if len(bench.GetInstance().Etcd.Key) == 0 {
-		bench.GetInstance().Etcd.Key = fmt.Sprintf("%v/%v/%v/%v/%v",
-			common.ProjectName, etcd.WatchMsgTypeService,
-			p.ZoneID, p.ServiceName, p.ServiceID)
-	}
-	if bench.GetInstance().Etcd.TTL == 0 {
-		bench.GetInstance().Etcd.TTL = etcd.TtlSecondDefault
-	}
-	if len(bench.GetInstance().Base.LogAbsPath) == 0 {
-		bench.GetInstance().Base.LogAbsPath = common.LogAbsPath
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 	//GoMaxProcess
-	previous := runtime.GOMAXPROCS(bench.GetInstance().Base.GoMaxProcess)
-	xrlog.PrintfInfo("go max process new:%v, previous setting:%v",
-		bench.GetInstance().Base.GoMaxProcess, previous)
+	previous := runtime.GOMAXPROCS(p.BenchMgr.Base.GoMaxProcess)
+	liblog.PrintfInfo("go max process new:%v, previous setting:%v",
+		p.BenchMgr.Base.GoMaxProcess, previous)
 	// log
 	err = p.LogMgr.Start(ctx,
-		xrlog.NewOptions().
-			SetLevel(xrlog.Level(bench.GetInstance().Base.LogLevel)).
-			SetAbsPath(bench.GetInstance().Base.LogAbsPath).
+		liblog.NewOptions().
+			SetLevel(liblog.Level(p.BenchMgr.Base.LogLevel)).
+			SetAbsPath(p.BenchMgr.Base.LogAbsPath).
 			SetNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
 	)
 	if err != nil {
-		return errors.Errorf("log Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
+		return errors.Errorf("log Start err:%v %v ", err, libutil.GetCodeLocation(1).String())
 	}
-	// 加载配置文件 bench.json 私有部分
-	if p.Options.subBench != nil {
-		err = p.Options.subBench.Load(benchPath)
-		if err != nil {
-			return errors.Errorf("GSubBench Load err:%v %v", err, xrutil.GetCodeLocation(1).String())
-		}
-	}
+
 	// eventChan
-	p.busChannel = make(chan interface{}, bench.GetInstance().Base.BusChannelNumber)
+	p.busChannel = make(chan interface{}, p.BenchMgr.Base.BusChannelNumber)
 	go func() {
 		defer func() {
 			// 主事件channel报错 不recover
-			p.LogMgr.Fatalf(xrconstant.GoroutineDone)
+			p.LogMgr.Fatalf(libconstant.GoroutineDone)
 		}()
 		p.busChannelWaitGroup.Add(1)
 		defer p.busChannelWaitGroup.Done()
@@ -135,34 +161,34 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 		p.HandleBus()
 	}()
 	// 是否开启http采集分析
-	if 0 < bench.GetInstance().Base.PprofHttpPort {
-		xrpprof.StartHTTPprof(fmt.Sprintf("0.0.0.0:%d", bench.GetInstance().Base.PprofHttpPort))
+	if 0 < p.BenchMgr.Base.PprofHttpPort {
+		libpprof.StartHTTPprof(fmt.Sprintf("0.0.0.0:%d", p.BenchMgr.Base.PprofHttpPort))
 	}
 	// 全局定时器
 	err = p.TimerMgr.Start(ctx,
-		xrtimer.NewOptions().
-			SetScanSecondDuration(bench.GetInstance().Timer.ScanSecondDuration).
-			SetScanMillisecondDuration(bench.GetInstance().Timer.ScanMillisecondDuration).
-			SetTimerOutChan(p.busChannel),
+		libtimer.NewOptions().
+			SetScanSecondDuration(p.BenchMgr.Timer.ScanSecondDuration).
+			SetScanMillisecondDuration(p.BenchMgr.Timer.ScanMillisecondDuration).
+			SetOutgoingTimerOutChan(p.busChannel),
 	)
 	if err != nil {
-		return errors.Errorf("timer Start err:%v %v ", err, xrutil.GetCodeLocation(1).String())
+		return errors.Errorf("timer Start err:%v %v ", err, libutil.GetCodeLocation(1).String())
 	}
 	// 启动Etcd
-	err = etcd.Start(&bench.GetInstance().Etcd, p.busChannel, p.Options.etcdHandler)
+	err = pkgetcd.Start(&p.BenchMgr.Etcd, p.busChannel, p.Options.etcdHandler)
 	if err != nil {
-		return errors.Errorf("Etcd start err:%v %v", err, xrutil.GetCodeLocation(1).String())
+		return errors.Errorf("Etcd start err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	// etcd 关注 服务 首次启动服务需要拉取一次
-	if err = p.EtcdMgr.WatchPrefixIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
-		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	if err = p.EtcdMgr.WatchPrefixSendIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
+		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
-	if err = p.EtcdMgr.GetPrefixIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
-		return errors.Errorf("EtcdGetPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	if err = p.EtcdMgr.GetPrefixSendIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
+		return errors.Errorf("EtcdGetPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	// etcd 关注 命令
-	if err = p.EtcdMgr.WatchPrefixIntoChan(*p.Options.etcdWatchCommandPrefix); err != nil {
-		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, xrutil.GetCodeLocation(1).String())
+	if err = p.EtcdMgr.WatchPrefixSendIntoChan(*p.Options.etcdWatchCommandPrefix); err != nil {
+		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	p.serviceInformationPrintingStart()
 	runtime.GC()
@@ -171,7 +197,7 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 }
 
 func (p *Normal) Start(ctx context.Context) error {
-	return xrerror.NotImplemented
+	return liberror.NotImplemented
 }
 
 func (p *Normal) Run(ctx context.Context) error {
@@ -187,7 +213,7 @@ func (p *Normal) Run(ctx context.Context) error {
 }
 
 func (p *Normal) PreStop(ctx context.Context) error {
-	return xrerror.NotImplemented
+	return liberror.NotImplemented
 }
 
 func (p *Normal) Stop(ctx context.Context) error {
@@ -215,15 +241,15 @@ func (p *Normal) Stop(ctx context.Context) error {
 	// 等待GEventChan处理结束
 	p.busChannelWaitGroup.Wait()
 
-	xrtimer.GetInstance().Stop()
+	p.TimerMgr.Stop()
 	p.LogMgr.Warn("server Timer stop")
 
-	if xretcd.IsEnable() {
-		_ = xretcd.GetInstance().Stop()
+	if libetcd.IsEnable() {
+		_ = p.EtcdMgr.Stop()
 		p.LogMgr.Warn("server Etcd stop")
 	}
 
-	xrlog.PrintErr("server Log stop")
+	liblog.PrintErr("server Log stop")
 	_ = p.LogMgr.Stop()
 	return nil
 }
