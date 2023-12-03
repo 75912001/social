@@ -21,6 +21,7 @@ func (p *Millisecond) reset() {
 }
 
 // DelMillisecond 删除毫秒级定时器
+//
 //	NOTE 必须与该timerOutChan线性处理.如:在同一个goroutine select中处理数据
 //	参数:
 //		毫秒定时器
