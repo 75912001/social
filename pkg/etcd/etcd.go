@@ -12,11 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const WatchMsgTypeService string = "service"
-const WatchMsgTypeCommand string = "command"
-
-const TtlSecondDefault int64 = 33 //默认TTL时间 秒
-
 // Parse
 // e.g.:/objectName/service/${zoneID}/${serviceName}/${serviceID}
 // e.g.:/objectName/command/${zoneID}/${serviceName}/${serviceID}
