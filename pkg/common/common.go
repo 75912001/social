@@ -1,4 +1,4 @@
 package common
 
 const ProjectName = "social"
-const LogAbsPath string = "/data/nd/social/log"
+const LogAbsPath = "/data/" + ProjectName + "/log"
