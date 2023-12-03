@@ -95,8 +95,10 @@ var (
 	VersionMismatch = &Error{Code: 0xf02c, Name: "VersionMismatch", Desc: "version mismatch"}
 	// Unavailable 不可用
 	Unavailable = &Error{Code: 0xf02d, Name: "Unavailable", Desc: "unavailable"}
+	// NotImplemented 未实现
+	NotImplemented = &Error{Code: 0xf02e, Name: "NotImplemented", Desc: "not implemented"}
 	// Unknown 未知
-	Unknown = &Error{Code: 0xf02e, Name: "Unknown", Desc: "unknown"}
+	Unknown = &Error{Code: 0xf02f, Name: "Unknown", Desc: "unknown"}
 	// 0xffff
 )
 
@@ -146,6 +148,7 @@ func init() {
 	_ = Register(FormatMismatch)
 	_ = Register(MISSING)
 	_ = Register(VersionMismatch)
+	_ = Register(NotImplemented)
 	_ = Register(Unavailable)
 
 	_ = Register(Unknown)

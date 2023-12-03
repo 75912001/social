@@ -1,16 +1,15 @@
 package log
 
 import (
-	"os"
-	xrerror "social/pkg/lib/error"
-	xrutil "social/pkg/lib/util"
-
 	"github.com/pkg/errors"
+	"os"
+	liberror "social/pkg/lib/error"
+	libutil "social/pkg/lib/util"
 )
 
-// Options contains options to configure a server instance. Each option can be set through setter functions. See
+// options contains options to configure a server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
-type Options struct {
+type options struct {
 	level          *Level     // 日志等级
 	absPath        *string    // 日志绝对路径
 	isReportCaller *bool      // 是否打印调用信息 default: true
@@ -21,75 +20,74 @@ type Options struct {
 }
 
 // NewOptions 新的Options
-func NewOptions() *Options {
-	ops := new(Options)
+func NewOptions() *options {
+	ops := new(options)
 	ops.hooks = make(LevelHooks)
 	return ops
 }
 
-func (p *Options) SetLevel(level Level) *Options {
+func (p *options) SetLevel(level Level) *options {
 	p.level = &level
 	return p
 }
 
-func (p *Options) SetIsReportCaller(isReportCaller bool) *Options {
-	p.isReportCaller = &isReportCaller
-	return p
-}
-
-func (p *Options) SetIsWriteFile(isWriteFile bool) *Options {
-	p.isWriteFile = &isWriteFile
-	return p
-}
-
-func (p *Options) SetAbsPath(absPath string) *Options {
+func (p *options) SetAbsPath(absPath string) *options {
 	p.absPath = &absPath
 	return p
 }
 
-func (p *Options) SetNamePrefix(namePrefix string) *Options {
+func (p *options) SetIsReportCaller(isReportCaller bool) *options {
+	p.isReportCaller = &isReportCaller
+	return p
+}
+
+func (p *options) SetNamePrefix(namePrefix string) *options {
 	p.namePrefix = &namePrefix
 	return p
 }
 
-func (p *Options) SetHooks(hooks LevelHooks) *Options {
+func (p *options) SetHooks(hooks LevelHooks) *options {
 	p.hooks = hooks
 	return p
 }
 
-func (p *Options) SetEnablePool(enablePool bool) *Options {
+func (p *options) SetIsWriteFile(isWriteFile bool) *options {
+	p.isWriteFile = &isWriteFile
+	return p
+}
+
+func (p *options) SetEnablePool(enablePool bool) *options {
 	p.enablePool = &enablePool
 	return p
 }
 
-func (p *Options) IsEnablePool() bool {
+func (p *options) IsEnablePool() bool {
 	return *p.enablePool
 }
 
 // AddHooks 添加钩子
-func (p *Options) AddHooks(hook Hook) *Options {
+func (p *options) AddHooks(hook Hook) *options {
 	p.hooks.add(hook)
 	return p
 }
 
-// mergeOptions combines the given *Options into a single *Options in a last one wins fashion.
+// mergeOptions combines the given *options into a single *options in a last one wins fashion.
 // The specified options are merged with the existing options on the server, with the specified options taking
 // precedence.
-func mergeOptions(opts ...*Options) *Options {
+func mergeOptions(opts ...*options) *options {
 	so := NewOptions()
 	for _, opt := range opts {
 		if opt == nil {
 			continue
 		}
-
 		if opt.level != nil {
 			so.level = opt.level
 		}
-		if opt.isReportCaller != nil {
-			so.isReportCaller = opt.isReportCaller
-		}
 		if opt.absPath != nil {
 			so.absPath = opt.absPath
+		}
+		if opt.isReportCaller != nil {
+			so.isReportCaller = opt.isReportCaller
 		}
 		if opt.namePrefix != nil {
 			so.namePrefix = opt.namePrefix
@@ -108,12 +106,16 @@ func mergeOptions(opts ...*Options) *Options {
 }
 
 // 配置
-func configure(opts *Options) error {
+func configure(opts *options) error {
 	if opts.level == nil {
-		return errors.WithMessage(xrerror.Param, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
 	}
 	if opts.absPath == nil {
-		return errors.WithMessage(xrerror.Param, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+	}
+	if opts.isReportCaller == nil {
+		var reportCaller = true
+		opts.isReportCaller = &reportCaller
 	}
 	if opts.isWriteFile == nil {
 		var writeFile = true
@@ -123,13 +125,8 @@ func configure(opts *Options) error {
 		var enablePool = true
 		opts.enablePool = &enablePool
 	}
-	if opts.isReportCaller == nil {
-		var reportCaller = true
-		opts.isReportCaller = &reportCaller
-	}
 	if err := os.MkdirAll(*opts.absPath, os.ModePerm); err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
-
 	return nil
 }

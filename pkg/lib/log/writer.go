@@ -2,10 +2,9 @@ package log
 
 import (
 	"fmt"
-	"os"
-	xrutil "social/pkg/lib/util"
-
 	"github.com/pkg/errors"
+	"os"
+	libutil "social/pkg/lib/util"
 )
 
 const (
@@ -28,7 +27,7 @@ func newFileWriter(filePath string, namePrefix string, ymd int, fileBaseName str
 	fileName := fmt.Sprintf("%s/%s-%d-%s", filePath, namePrefix, ymd, fileBaseName)
 	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.FileMode(0644))
 	if err != nil {
-		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 	return file, nil
 }

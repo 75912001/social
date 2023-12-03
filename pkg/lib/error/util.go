@@ -3,7 +3,7 @@ package error
 import (
 	"fmt"
 	"runtime"
-	xrconstant "social/pkg/lib/constant"
+	libconstant "social/pkg/lib/constant"
 )
 
 // codeLocationInfo 代码位置信息
@@ -23,9 +23,9 @@ func getCodeLocationInfo(skip int) *codeLocationInfo {
 	c := &codeLocationInfo{}
 	pc, file, line, ok := runtime.Caller(skip)
 	if !ok {
-		c.FileName = xrconstant.Unknown
+		c.FileName = libconstant.Unknown
 		c.Line = 0
-		c.FuncName = xrconstant.Unknown
+		c.FuncName = libconstant.Unknown
 	} else {
 		c.FileName = file
 		c.Line = line

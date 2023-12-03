@@ -6,18 +6,17 @@ package log
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"io"
 	"log"
 	"os"
 	"runtime/debug"
-	xrconstant "social/pkg/lib/constant"
-	xrerror "social/pkg/lib/error"
-	xrutil "social/pkg/lib/util"
+	libconstant "social/pkg/lib/constant"
+	liberror "social/pkg/lib/error"
+	libutil "social/pkg/lib/util"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -27,17 +26,20 @@ const (
 	TraceIDKey         = "TraceID"         // 日志traceId key
 	UserIDKey          = "UID"             // 日志用户ID key
 	bufferCapacity     = 300               // buffer 容量
+	calldepth1         = 1
+	calldepth2         = calldepth1 + 1 //打印堆栈时候跳过的层数
+	calldepth3         = calldepth2 + 1
 )
 
 var (
-	instance *mgr
+	instance *Mgr
 	once     sync.Once
 )
 
 // GetInstance 获取
-func GetInstance() *mgr {
+func GetInstance() *Mgr {
 	once.Do(func() {
-		instance = new(mgr)
+		instance = new(Mgr)
 	})
 	return instance
 }
@@ -50,12 +52,12 @@ func IsEnable() bool {
 	return GetInstance().logChan != nil
 }
 
-// mgr 日志
-type mgr struct {
-	options *Options
+// Mgr 日志
+type Mgr struct {
+	options *options
 
 	loggerSlice     [LevelOn]*log.Logger // 日志实例 note:此处非协程安全
-	logChan         chan *Entry          // 日志写入通道
+	logChan         chan *entry          // 日志写入通道
 	waitGroupOutPut sync.WaitGroup       // 同步锁
 	logDuration     int                  // 日志分割刻度 按天或者小时  e.g.:20210819或2021081901
 	openFiles       []*os.File           // 当前打开的文件
@@ -63,9 +65,9 @@ type mgr struct {
 }
 
 // GetLevel 获取日志等级
-func (p *mgr) GetLevel() Level {
+func (p *Mgr) GetLevel() Level {
 	if p.options == nil {
-		return LevelOn
+		return LevelOff
 	}
 	if p.options.level == nil {
 		return LevelOn
@@ -78,13 +80,13 @@ func (p *mgr) GetLevel() Level {
 //	参数:
 //		absPath:日志绝对路径
 //		namePrefix:日志名 前缀
-func (p *mgr) Start(_ context.Context, opts ...*Options) error {
+func (p *Mgr) Start(_ context.Context, opts ...*options) error {
 	p.options = mergeOptions(opts...)
 	if err := configure(p.options); err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 
-	p.logChan = make(chan *Entry, logChannelCapacity)
+	p.logChan = make(chan *entry, logChannelCapacity)
 
 	// 初始化logger
 	for i := LevelOff; i < LevelOn; i++ {
@@ -93,13 +95,13 @@ func (p *mgr) Start(_ context.Context, opts ...*Options) error {
 
 	// 初始化各级别的日志输出
 	if err := p.newWriters(); err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 
 	if p.options.IsEnablePool() {
 		p.pool = &sync.Pool{
 			New: func() interface{} {
-				return new(Entry)
+				return new(entry)
 			},
 		}
 	}
@@ -107,13 +109,13 @@ func (p *mgr) Start(_ context.Context, opts ...*Options) error {
 	p.waitGroupOutPut.Add(1)
 	go func() {
 		defer func() {
-			if xrutil.IsRelease() {
+			if libutil.IsRelease() {
 				if err := recover(); err != nil {
-					PrintErr(xrconstant.GoroutinePanic, err, debug.Stack())
+					PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
 				}
 			}
 			p.waitGroupOutPut.Done()
-			PrintInfo(xrconstant.GoroutineDone)
+			PrintInfo(libconstant.GoroutineDone)
 		}()
 		p.doLog()
 	}()
@@ -121,9 +123,9 @@ func (p *mgr) Start(_ context.Context, opts ...*Options) error {
 }
 
 // getLogDuration 取得日志刻度
-func (p *mgr) getLogDuration(sec int64) int {
+func (p *Mgr) getLogDuration(sec int64) int {
 	var logFormat string
-	if xrutil.IsRelease() {
+	if libutil.IsRelease() {
 		logFormat = "2006010215" //年月日小时
 	} else {
 		logFormat = "20060102" //年月日
@@ -138,7 +140,7 @@ func (p *mgr) getLogDuration(sec int64) int {
 }
 
 // doLog 处理日志
-func (p *mgr) doLog() {
+func (p *Mgr) doLog() {
 	for v := range p.logChan {
 		p.fireHooks(v)
 
@@ -166,20 +168,20 @@ func (p *mgr) doLog() {
 }
 
 // SetLevel 设置日志等级
-func (p *mgr) SetLevel(lv Level) error {
+func (p *Mgr) SetLevel(lv Level) error {
 	if lv < LevelOff || LevelOn < lv {
-		return errors.WithMessage(xrerror.Level, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Level, libutil.GetCodeLocation(1).String())
 	}
 	p.options.SetLevel(lv)
 	return nil
 }
 
 // newWriters 初始化各级别的日志输出
-func (p *mgr) newWriters() error {
+func (p *Mgr) newWriters() error {
 	// 检查是否要关闭文件
 	for i := range p.openFiles {
 		if err := p.openFiles[i].Close(); err != nil {
-			return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 		}
 	}
 
@@ -187,11 +189,11 @@ func (p *mgr) newWriters() error {
 	duration := p.getLogDuration(second)
 	accessWriter, err := newAccessFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 	errorWriter, err := newErrorFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
-		return errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
 	p.logDuration = duration
 
@@ -217,7 +219,7 @@ func (p *mgr) newWriters() error {
 }
 
 // Stop 停止
-func (p *mgr) Stop() error {
+func (p *Mgr) Stop() error {
 	if p.logChan != nil {
 		// close chan, for range 读完chan会退出.
 		close(p.logChan)
@@ -231,15 +233,13 @@ func (p *mgr) Stop() error {
 		for i := range p.openFiles {
 			_ = p.openFiles[i].Close()
 		}
-
-		var openFiles []*os.File
-		p.openFiles = openFiles
+		p.openFiles = p.openFiles[0:0]
 	}
 	return nil
 }
 
 // fireHooks 处理钩子
-func (p *mgr) fireHooks(entry *Entry) {
+func (p *Mgr) fireHooks(entry *entry) {
 	if 0 == len(p.options.hooks) {
 		return
 	}
@@ -251,39 +251,39 @@ func (p *mgr) fireHooks(entry *Entry) {
 }
 
 // WithField 由field创建日志信息 默认大小2(cap:2*2=4)
-func (p *mgr) WithField(key string, value interface{}) *Entry {
+func (p *Mgr) WithField(key string, value interface{}) *entry {
 	entry := newEntry(p)
-	entry.fields = make(Fields, 0, 4)
+	entry.fields = make(fields, 0, 4)
 	return entry.WithField(key, value)
 }
 
 // WithFields 由fields创建日志信息 默认大小4(cap:4*2=8)
-func (p *mgr) WithFields(fields Fields) *Entry {
+func (p *Mgr) WithFields(f fields) *entry {
 	entry := newEntry(p)
-	entry.fields = make(Fields, 0, 8)
-	return entry.WithFields(fields)
+	entry.fields = make(fields, 0, 8)
+	return entry.WithFields(f)
 }
 
 // WithContext 由ctx创建日志信息
-func (p *mgr) WithContext(ctx context.Context) *Entry {
+func (p *Mgr) WithContext(ctx context.Context) *entry {
 	entry := newEntry(p)
 	return entry.WithContext(ctx)
 }
 
 // log 记录日志
-func (p *mgr) log(level Level, v ...interface{}) {
+func (p *Mgr) log(level Level, v ...interface{}) {
 	entry := newEntry(p)
-	entry.log(level, 3, v...)
+	entry.log(level, calldepth3, v...)
 }
 
 // logf 记录日志
-func (p *mgr) logf(level Level, format string, v ...interface{}) {
+func (p *Mgr) logf(level Level, format string, v ...interface{}) {
 	entry := newEntry(p)
-	entry.logf(level, 3, format, v...)
+	entry.logf(level, calldepth3, format, v...)
 }
 
 // Trace 踪迹日志
-func (p *mgr) Trace(v ...interface{}) {
+func (p *Mgr) Trace(v ...interface{}) {
 	if *p.options.level < LevelTrace {
 		return
 	}
@@ -291,7 +291,7 @@ func (p *mgr) Trace(v ...interface{}) {
 }
 
 // Tracef 踪迹日志
-func (p *mgr) Tracef(format string, v ...interface{}) {
+func (p *Mgr) Tracef(format string, v ...interface{}) {
 	if *p.options.level < LevelTrace {
 		return
 	}
@@ -299,7 +299,7 @@ func (p *mgr) Tracef(format string, v ...interface{}) {
 }
 
 // Debug 调试日志
-func (p *mgr) Debug(v ...interface{}) {
+func (p *Mgr) Debug(v ...interface{}) {
 	if *p.options.level < LevelDebug {
 		return
 	}
@@ -307,7 +307,7 @@ func (p *mgr) Debug(v ...interface{}) {
 }
 
 // Debugf 调试日志
-func (p *mgr) Debugf(format string, v ...interface{}) {
+func (p *Mgr) Debugf(format string, v ...interface{}) {
 	if *p.options.level < LevelDebug {
 		return
 	}
@@ -315,7 +315,7 @@ func (p *mgr) Debugf(format string, v ...interface{}) {
 }
 
 // Info 信息日志
-func (p *mgr) Info(v ...interface{}) {
+func (p *Mgr) Info(v ...interface{}) {
 	if *p.options.level < LevelInfo {
 		return
 	}
@@ -323,7 +323,7 @@ func (p *mgr) Info(v ...interface{}) {
 }
 
 // Infof 信息日志
-func (p *mgr) Infof(format string, v ...interface{}) {
+func (p *Mgr) Infof(format string, v ...interface{}) {
 	if *p.options.level < LevelInfo {
 		return
 	}
@@ -331,7 +331,7 @@ func (p *mgr) Infof(format string, v ...interface{}) {
 }
 
 // Warn 警告日志
-func (p *mgr) Warn(v ...interface{}) {
+func (p *Mgr) Warn(v ...interface{}) {
 	if *p.options.level < LevelWarn {
 		return
 	}
@@ -339,7 +339,7 @@ func (p *mgr) Warn(v ...interface{}) {
 }
 
 // Warnf 警告日志
-func (p *mgr) Warnf(format string, v ...interface{}) {
+func (p *Mgr) Warnf(format string, v ...interface{}) {
 	if *p.options.level < LevelWarn {
 		return
 	}
@@ -347,7 +347,7 @@ func (p *mgr) Warnf(format string, v ...interface{}) {
 }
 
 // Error 错误日志
-func (p *mgr) Error(v ...interface{}) {
+func (p *Mgr) Error(v ...interface{}) {
 	if *p.options.level < LevelError {
 		return
 	}
@@ -355,7 +355,7 @@ func (p *mgr) Error(v ...interface{}) {
 }
 
 // Errorf 错误日志
-func (p *mgr) Errorf(format string, v ...interface{}) {
+func (p *Mgr) Errorf(format string, v ...interface{}) {
 	if *p.options.level < LevelError {
 		return
 	}
@@ -363,7 +363,7 @@ func (p *mgr) Errorf(format string, v ...interface{}) {
 }
 
 // Fatal 致命日志
-func (p *mgr) Fatal(v ...interface{}) {
+func (p *Mgr) Fatal(v ...interface{}) {
 	if *p.options.level < LevelFatal {
 		return
 	}
@@ -371,7 +371,7 @@ func (p *mgr) Fatal(v ...interface{}) {
 }
 
 // Fatalf 致命日志
-func (p *mgr) Fatalf(format string, v ...interface{}) {
+func (p *Mgr) Fatalf(format string, v ...interface{}) {
 	if *p.options.level < LevelFatal {
 		return
 	}

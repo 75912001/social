@@ -3,7 +3,6 @@ package error
 
 import (
 	"fmt"
-
 	"github.com/pkg/errors"
 )
 
@@ -17,6 +16,14 @@ func Register(err *Error) error {
 	}
 	errorMap[err.Code] = struct{}{}
 	return nil
+}
+
+func NewError(e *Error) *Error {
+	return &Error{
+		Code: e.Code,
+		Name: e.Name,
+		Desc: e.Desc,
+	}
 }
 
 // Error 错误
@@ -35,14 +42,6 @@ func (p *Error) Error() string {
 	}
 	return fmt.Sprintf("name:%v code:%v %#x description:%v extraMessage:%v extraError%v",
 		p.Name, p.Code, p.Code, p.Desc, p.ExtraMessage, p.ExtraError)
-}
-
-func NewError(e *Error) *Error {
-	return &Error{
-		Code: e.Code,
-		Name: e.Name,
-		Desc: e.Desc,
-	}
 }
 
 func (p *Error) WithExtraMessage(extraMessage string) *Error {

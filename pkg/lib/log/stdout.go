@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
-	xrconstant "social/pkg/lib/constant"
+	libconstant "social/pkg/lib/constant"
 	"time"
 )
 
@@ -20,29 +20,22 @@ func PrintInfo(v ...interface{}) {
 	if IsEnable() { // 日志已启用,需要放入日志 channel 中
 		GetInstance().log(LevelInfo, v...)
 	} else {
-		pc, _, line, ok := runtime.Caller(1)
-		funcName := xrconstant.Unknown
+		pc, _, line, ok := runtime.Caller(calldepth1)
+		funcName := libconstant.Unknown
 		if !ok {
 			line = 0
 		} else {
 			funcName = runtime.FuncForPC(pc).Name()
 		}
-
 		var buf bytes.Buffer
 		buf.Grow(bufferCapacity)
-
 		// 格式为  [时间][日志级别][UID:xxx][堆栈信息]自定义内容
 		buf.WriteString(fmt.Sprint("[", time.Now().Format(logTimeFormat), "]"))
-
-		buf.WriteString(fmt.Sprint("[", levelTag[LevelInfo], "]"))
-
+		buf.WriteString(fmt.Sprint("[", levelName[LevelInfo], "]"))
 		buf.WriteString("[UID:0]")
-
 		buf.WriteString(fmt.Sprint("[", fmt.Sprintf(callerInfoFormat, line, funcName), "]"))
-
 		buf.WriteString(fmt.Sprint(v...))
-
-		_ = stdOut.Output(2, buf.String())
+		_ = stdOut.Output(calldepth2, buf.String())
 	}
 }
 
@@ -54,28 +47,21 @@ func PrintfInfo(format string, v ...interface{}) {
 	if IsEnable() { // 日志已启用,需要放入日志 channel 中
 		GetInstance().logf(LevelInfo, format, v...)
 	} else {
-		pc, _, line, ok := runtime.Caller(1)
-		funcName := xrconstant.Unknown
+		pc, _, line, ok := runtime.Caller(calldepth1)
+		funcName := libconstant.Unknown
 		if !ok {
 			line = 0
 		} else {
 			funcName = runtime.FuncForPC(pc).Name()
 		}
-
 		var buf bytes.Buffer
 		buf.Grow(bufferCapacity)
-
 		// 格式为  [时间][日志级别][UID:xxx][堆栈信息]自定义内容
 		buf.WriteString(fmt.Sprint("[", time.Now().Format(logTimeFormat), "]"))
-
-		buf.WriteString(fmt.Sprint("[", levelTag[LevelInfo], "]"))
-
+		buf.WriteString(fmt.Sprint("[", levelName[LevelInfo], "]"))
 		buf.WriteString("[UID:0]")
-
 		buf.WriteString(fmt.Sprint("[", fmt.Sprintf(callerInfoFormat, line, funcName), "]"))
-
 		buf.WriteString(fmt.Sprintf(format, v...))
-
-		_ = stdOut.Output(2, buf.String())
+		_ = stdOut.Output(calldepth2, buf.String())
 	}
 }

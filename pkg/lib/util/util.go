@@ -4,19 +4,18 @@ import (
 	"bytes"
 	cryptorand "crypto/rand"
 	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	xrconstant "social/pkg/lib/constant"
-	xrerror "social/pkg/lib/error"
+	libconstant "social/pkg/lib/constant"
+	liberror "social/pkg/lib/error"
 	"strconv"
 	"strings"
 	"unsafe"
-
-	"github.com/pkg/errors"
 )
 
 // GetCurrentPath 获取当前程序 所在 路径
@@ -77,7 +76,7 @@ func SplitString2Map(s string, sep1 string, sep2 string) (map[uint32]int64, erro
 		}
 		sliceAttr := strings.Split(v, sep2)
 		if len(sliceAttr) != 2 {
-			return nil, errors.WithMessage(xrerror.Param, GetCodeLocation(1).String())
+			return nil, errors.WithMessage(liberror.Param, GetCodeLocation(1).String())
 		}
 		var idUint64 uint64
 		var valInt64 int64
@@ -105,7 +104,7 @@ func WeightedRandom(weights []uint32) (idx int, err error) {
 		sum += int64(v)
 	}
 	if sum == 0 { //weights slice 中 无数据 / 数据都为0
-		return 0, errors.WithMessage(xrerror.Param, GetCodeLocation(1).String())
+		return 0, errors.WithMessage(liberror.Param, GetCodeLocation(1).String())
 	}
 
 	r := rand.Int63n(sum) + 1
@@ -115,7 +114,7 @@ func WeightedRandom(weights []uint32) (idx int, err error) {
 		}
 		r -= int64(v)
 	}
-	return 0, errors.WithMessage(xrerror.System, GetCodeLocation(1).String())
+	return 0, errors.WithMessage(liberror.System, GetCodeLocation(1).String())
 }
 
 // CodeLocation 代码位置
@@ -141,8 +140,8 @@ func (p *CodeLocation) String() string {
 //		skip:The argument skip is the number of stack frames to ascend, with 0 identifying the caller of Caller.
 func GetCodeLocation(skip int) *CodeLocation {
 	c := &CodeLocation{
-		FileName: xrconstant.Unknown,
-		FuncName: xrconstant.Unknown,
+		FileName: libconstant.Unknown,
+		FuncName: libconstant.Unknown,
 	}
 
 	pc, fileName, line, ok := runtime.Caller(skip)
@@ -209,7 +208,7 @@ func GenNORepeatIdx(set map[uint32]struct{}, uint32Slice []uint32) (int, error) 
 		slice = append(slice, k)
 	}
 	if len(slice) == 0 {
-		return 0, errors.WithMessage(xrerror.NonExistent, GetCodeLocation(1).String())
+		return 0, errors.WithMessage(liberror.NonExistent, GetCodeLocation(1).String())
 	}
 	return slice[rand.Intn(len(slice))], nil
 }
@@ -230,7 +229,7 @@ func GenRandValue(except uint32, uint32Slice []uint32) (uint32, error) {
 		slice = append(slice, v)
 	}
 	if len(slice) == 0 {
-		return 0, errors.WithMessage(xrerror.NonExistent, GetCodeLocation(1).String())
+		return 0, errors.WithMessage(liberror.NonExistent, GetCodeLocation(1).String())
 	}
 	return slice[rand.Intn(len(slice))], nil
 }

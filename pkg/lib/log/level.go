@@ -14,7 +14,7 @@ const (
 	LevelOn    Level = 7 //7 全部打开
 )
 
-var levelTag = []string{
+var levelName = []string{
 	LevelOff:   "LevelOff",
 	LevelFatal: "Fatal",
 	LevelError: "Error",
