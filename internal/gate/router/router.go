@@ -1,7 +1,7 @@
 package router
 
 import (
-	"social/pkg/msg"
+	pkgmsg "social/pkg/msg"
 	"sync"
 )
 
@@ -22,7 +22,7 @@ func GetInstance() *mgr {
 type mgr struct {
 }
 
-func (p *mgr) Handle(header *msg.Header, data []byte) error {
+func (p *mgr) Handle(header *pkgmsg.Header, data []byte) error {
 	//TODO
 	return nil
 }
