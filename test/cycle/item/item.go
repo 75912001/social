@@ -1,14 +1,10 @@
 package item
 
-import (
-	"social/test/cycle/module"
-)
-
 type dependency interface {
 	UserGetName() string
 }
 
-func NewItem(dep module.Modules) *Item {
+func NewItem(dep dependency) *Item {
 	return &Item{
 		Deps: dep,
 		Name: "Item",
@@ -16,7 +12,7 @@ func NewItem(dep module.Modules) *Item {
 }
 
 type Item struct {
-	Deps module.Modules
+	Deps dependency
 	Name string
 }
 

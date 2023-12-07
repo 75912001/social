@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	user := user.NewUser()
-	fmt.Println(user.UserGetName())
-	fmt.Println(user.Item.ItemGetName())
+	u := user.NewUser()
+	fmt.Println(u.UserGetName())
+	fmt.Println(u.Item.ItemGetName())
 }
