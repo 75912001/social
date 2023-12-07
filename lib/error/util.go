@@ -3,7 +3,7 @@ package error
 import (
 	"fmt"
 	"runtime"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 )
 
 // codeLocationInfo 代码位置信息
@@ -18,14 +18,14 @@ func (p *codeLocationInfo) Error() string {
 	return fmt.Sprintf("file:%v line:%v func:%v", p.FileName, p.Line, p.FuncName)
 }
 
-// getCodeLocationInfo 获取代码位置信息
-func getCodeLocationInfo(skip int) *codeLocationInfo {
+// getCodeLocation 获取代码位置
+func getCodeLocation(skip int) *codeLocationInfo {
 	c := &codeLocationInfo{}
 	pc, file, line, ok := runtime.Caller(skip)
 	if !ok {
-		c.FileName = libconstant.Unknown
+		c.FileName = libconsts.Unknown
 		c.Line = 0
-		c.FuncName = libconstant.Unknown
+		c.FuncName = libconsts.Unknown
 	} else {
 		c.FileName = file
 		c.Line = line

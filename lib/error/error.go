@@ -12,7 +12,7 @@ var errMap = make(map[uint32]struct{})
 // Register 注册, 为了检测是否重复
 func Register(err *Error) error {
 	if _, ok := errMap[err.Code]; ok { //不可重复
-		return errors.WithMessage(Duplicate, getCodeLocationInfo(1).Error())
+		return errors.WithMessage(Duplicate, getCodeLocation(1).Error())
 	}
 	errMap[err.Code] = struct{}{}
 	return nil
