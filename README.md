@@ -74,9 +74,10 @@ windows
 │       └── service.go   
 ├── bin         --二进制执行文件
 │   └── server
-|       └──log  --日志
+|       └──log  --日志目录
+|       └──bench.json.default  --服务配置(正式为bench.json)
 ├── cmd         --Main入口 
-│   └── server
+│   └── main  --程序入口
 ├── internal    --游戏服务业务逻辑 
 │   └──  server
 │        └── internal   --该目录下具体实现服务的各模块，内部可拆分子目录（如hero、skin等）
@@ -84,6 +85,7 @@ windows
 │            └── skin
 │            └── hero
 ├── pkg         --通用工具包
+│   ├── bench   --配置文件方法定义
 │   ├── common  --通用方法定义
 │   ├── consts  --常量定义
 │   ├── deps    --依赖封装
