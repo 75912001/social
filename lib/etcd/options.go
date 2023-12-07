@@ -7,12 +7,6 @@ import (
 	"time"
 )
 
-var (
-	grantLeaseRetryDuration     = time.Second * 3 // 授权租约 重试 间隔时长
-	grantLeaseMaxRetriesDefault = 600             // 授权租约 最大 重试次数 默认值
-	dialTimeoutDefault          = time.Second * 5 //dialTimeout is the timeout for failing to establish a connection. 默认值
-)
-
 // OnFunc 处理数据
 type OnFunc func(key string, value string) error
 
@@ -116,7 +110,7 @@ func configure(opt *Options) error {
 		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
 	}
 	if opt.ttl == nil {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		opt.ttl = &TtlSecondDefault
 	}
 	if opt.grantLeaseMaxRetries == nil {
 		opt.grantLeaseMaxRetries = &grantLeaseMaxRetriesDefault
