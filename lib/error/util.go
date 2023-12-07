@@ -3,7 +3,7 @@ package error
 import (
 	"fmt"
 	"runtime"
-	libconstant "social/pkg/lib/constant"
+	libconstant "social/lib/consts"
 )
 
 // codeLocationInfo 代码位置信息

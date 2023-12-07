@@ -7,22 +7,22 @@ import (
 )
 
 // 错误信息
-var errorMap = make(map[uint32]struct{})
+var errMap = make(map[uint32]struct{})
 
 // Register 注册, 为了检测是否重复
 func Register(err *Error) error {
-	if _, ok := errorMap[err.Code]; ok { //不可重复
-		return errors.WithMessage(Exists, getCodeLocationInfo(1).Error())
+	if _, ok := errMap[err.Code]; ok { //不可重复
+		return errors.WithMessage(Duplicate, getCodeLocationInfo(1).Error())
 	}
-	errorMap[err.Code] = struct{}{}
+	errMap[err.Code] = struct{}{}
 	return nil
 }
 
-func NewError(e *Error) *Error {
+func NewError(code uint32, name string, desc string) *Error {
 	return &Error{
-		Code: e.Code,
-		Name: e.Name,
-		Desc: e.Desc,
+		Code: code,
+		Name: name,
+		Desc: desc,
 	}
 }
 
