@@ -1,5 +1,5 @@
-// Package constant 常量
-package constant
+// Package consts 常量
+package consts
 
 const (
 	Success        = "success"         // 成功
