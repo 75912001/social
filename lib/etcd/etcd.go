@@ -5,37 +5,36 @@ import (
 	"github.com/pkg/errors"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"runtime/debug"
-	libconstant "social/pkg/lib/constant"
-	liblog "social/pkg/lib/log"
-	libutil "social/pkg/lib/util"
+	libconsts "social/lib/consts"
+	liblog "social/lib/log"
+	libutil "social/lib/util"
 	"sync"
-	"time"
 )
 
-var (
-	instance *Mgr
-	once     sync.Once
-)
-
-// GetInstance 获取
-func GetInstance() *Mgr {
-	once.Do(func() {
-		instance = NewMgr()
-	})
-	return instance
-}
+//var (
+//	instance *Mgr
+//	once     sync.Once
+//)
+//
+//// GetInstance 获取
+//func GetInstance() *Mgr {
+//	once.Do(func() {
+//		instance = NewMgr()
+//	})
+//	return instance
+//}
 
 // IsEnable 是否 开启
-func IsEnable() bool {
-	if instance == nil {
-		return false
-	}
-	return instance.client != nil
-}
+//func IsEnable() bool {
+//	if instance == nil {
+//		return false
+//	}
+//	return instance.client != nil
+//}
 
-func NewMgr() *Mgr {
-	return new(Mgr)
-}
+//func NewMgr() *Mgr {
+//	return new(Mgr)
+//}
 
 // Mgr 管理器
 type Mgr struct {
@@ -48,7 +47,7 @@ type Mgr struct {
 	cancelFunc context.CancelFunc
 	waitGroup  sync.WaitGroup // Stop 等待信号
 
-	options *options
+	options *Options
 }
 
 // Handler etcd 处理数据
@@ -57,7 +56,7 @@ func (p *Mgr) Handler(key string, val string) error {
 }
 
 // Start 开始
-func (p *Mgr) Start(ctx context.Context, opts ...*options) error {
+func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	err := configure(p.options)
 	if err != nil {
@@ -80,13 +79,16 @@ func (p *Mgr) Start(ctx context.Context, opts ...*options) error {
 	if err != nil {
 		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
-	// 先删除,再添加
+	// 先删除
 	for _, v := range p.options.kvSlice {
-		_, err = p.DelWithPrefix(v.Key)
+		_, err = p.Del(ctx, v.Key)
 		if err != nil {
 			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 		}
-		_, err = p.PutWithLease(v.Key, v.Value)
+	}
+	// 再添加
+	for _, v := range p.options.kvSlice {
+		_, err = p.PutWithLease(ctx, v.Key, v.Value)
 		if err != nil {
 			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 		}
@@ -94,8 +96,8 @@ func (p *Mgr) Start(ctx context.Context, opts ...*options) error {
 	return nil
 }
 
-// KeepAlive 更新租约
-func (p *Mgr) KeepAlive(ctx context.Context) error {
+// Run 租约续约
+func (p *Mgr) Run(ctx context.Context) error {
 	var err error
 	p.leaseKeepAliveResponseChannel, err = p.lease.KeepAlive(ctx, p.leaseGrantResponse.ID)
 	if err != nil {
@@ -111,17 +113,16 @@ func (p *Mgr) KeepAlive(ctx context.Context) error {
 		defer func() {
 			if libutil.IsRelease() {
 				if err := recover(); err != nil {
-					liblog.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+					liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 				}
 			}
 			p.waitGroup.Done()
-			liblog.PrintInfo(libconstant.GoroutineDone)
+			liblog.PrintInfo(libconsts.GoroutineDone)
 		}()
-
 		for {
 			select {
 			case <-ctx.Done():
-				liblog.PrintInfo(libconstant.GoroutineDone)
+				liblog.PrintInfo(libconsts.GoroutineDone)
 				return
 			case leaseKeepAliveResponse, ok := <-p.leaseKeepAliveResponseChannel:
 				liblog.PrintInfo(leaseKeepAliveResponse, ok)
@@ -131,30 +132,23 @@ func (p *Mgr) KeepAlive(ctx context.Context) error {
 				if ok {
 					continue
 				}
-				// abnormal
-				liblog.PrintErr("etcd lease KeepAlive died, retrying")
-				go func(ctx context.Context) {
-					defer func() {
-						if libutil.IsRelease() {
-							if err := recover(); err != nil {
-								liblog.PrintErr(libconstant.Retry, libconstant.GoroutinePanic, err, debug.Stack())
-							}
-						}
-						liblog.PrintInfo(libconstant.Retry, libconstant.GoroutineDone)
-					}()
-					if err := p.Stop(); err != nil {
-						liblog.PrintInfo(libconstant.Retry, libconstant.Failure, err)
-						return
-					}
-					if err := p.retryKeepAlive(ctx); err != nil {
-						liblog.PrintErr(libconstant.Retry, libconstant.Failure, err)
-						return
-					}
-				}(context.TODO())
+				p.abnormal()
 				return
 			}
 		}
 	}(ctxWithCancel)
+	// 关注 服务
+	if err = p.WatchPrefixSendIntoChan(ctx, *p.options.watchServicePrefix); err != nil {
+		return errors.Errorf("WatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
+	}
+	// 获取 服务
+	if err = p.GetPrefixSendIntoChan(ctx, *p.options.watchServicePrefix); err != nil {
+		return errors.Errorf("GetPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
+	}
+	// 关注 命令
+	if err = p.WatchPrefixSendIntoChan(ctx, *p.options.watchCommandPrefix); err != nil {
+		return errors.Errorf("WatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
+	}
 	return nil
 }
 
@@ -162,9 +156,9 @@ func (p *Mgr) KeepAlive(ctx context.Context) error {
 func (p *Mgr) Stop() error {
 	if p.client != nil { // 删除
 		for _, v := range p.options.kvSlice {
-			_, err := p.DelWithPrefix(v.Key)
+			_, err := p.Del(context.Background(), v.Key)
 			if err != nil {
-				liblog.PrintErr(libutil.GetCodeLocation(1).String())
+				liblog.PrintErr(err, libutil.GetCodeLocation(1).String())
 				//	return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 			}
 		}
@@ -185,8 +179,8 @@ func (p *Mgr) Stop() error {
 }
 
 // Put 将一个键值对放入etcd中
-func (p *Mgr) Put(key string, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
-	putResponse, err := p.kv.Put(context.TODO(), key, value, opts...)
+func (p *Mgr) Put(ctx context.Context, key string, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
+	putResponse, err := p.kv.Put(ctx, key, value, opts...)
 	if err != nil {
 		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
@@ -194,16 +188,16 @@ func (p *Mgr) Put(key string, value string, opts ...clientv3.OpOption) (*clientv
 }
 
 // PutWithLease 将一个键值对放入etcd中 WithLease 带ttl
-func (p *Mgr) PutWithLease(key string, value string) (*clientv3.PutResponse, error) {
+func (p *Mgr) PutWithLease(ctx context.Context, key string, value string) (*clientv3.PutResponse, error) {
 	opts := []clientv3.OpOption{
 		clientv3.WithLease(p.leaseGrantResponse.ID),
 	}
-	return p.Put(key, value, opts...)
+	return p.Put(ctx, key, value, opts...)
 }
 
 // Del 删除
-func (p *Mgr) Del(key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
-	deleteResponse, err := p.kv.Delete(context.TODO(), key, opts...)
+func (p *Mgr) Del(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
+	deleteResponse, err := p.kv.Delete(ctx, key, opts...)
 	if err != nil {
 		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
@@ -211,48 +205,49 @@ func (p *Mgr) Del(key string, opts ...clientv3.OpOption) (*clientv3.DeleteRespon
 }
 
 // DelWithPrefix 删除键值 匹配的键值
-func (p *Mgr) DelWithPrefix(keyPrefix string) (*clientv3.DeleteResponse, error) {
+func (p *Mgr) DelWithPrefix(ctx context.Context, keyPrefix string) (*clientv3.DeleteResponse, error) {
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 	}
-	return p.Del(keyPrefix, opts...)
+	return p.Del(ctx, keyPrefix, opts...)
 }
 
 // DelRange 按选项删除范围内的键值
-func (p *Mgr) DelRange(startKeyPrefix string, endKeyPrefix string) (*clientv3.DeleteResponse, error) {
+func (p *Mgr) DelRange(ctx context.Context, startKeyPrefix string, endKeyPrefix string) (*clientv3.DeleteResponse, error) {
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithFromKey(),
 		clientv3.WithRange(endKeyPrefix),
 	}
-	return p.Del(startKeyPrefix, opts...)
+	return p.Del(ctx, startKeyPrefix, opts...)
 }
 
 // Watch 监视key
-func (p *Mgr) Watch(key string, opts ...clientv3.OpOption) clientv3.WatchChan {
-	return p.client.Watch(context.TODO(), key, opts...)
+func (p *Mgr) Watch(ctx context.Context, key string, opts ...clientv3.OpOption) clientv3.WatchChan {
+	return p.client.Watch(ctx, key, opts...)
 }
 
 // WatchPrefix 监视以key为前缀的所有 key value
-func (p *Mgr) WatchPrefix(key string) clientv3.WatchChan {
+func (p *Mgr) WatchPrefix(ctx context.Context, key string) clientv3.WatchChan {
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 	}
-	return p.Watch(key, opts...)
+	return p.Watch(ctx, key, opts...)
 }
 
 // WatchPrefixSendIntoChan 监听key变化,放入 chan 中
-func (p *Mgr) WatchPrefixSendIntoChan(preFix string) error {
-	eventChan := p.WatchPrefix(preFix)
-	go func() {
+func (p *Mgr) WatchPrefixSendIntoChan(ctx context.Context, preFix string) error {
+	eventChan := p.WatchPrefix(ctx, preFix)
+	go func(ctx context.Context) {
 		defer func() {
 			if libutil.IsRelease() {
 				if err := recover(); err != nil {
-					liblog.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+					liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 				}
 			}
-			liblog.PrintInfo(libconstant.GoroutineDone)
+			liblog.PrintInfo(libconsts.GoroutineDone)
 		}()
+		//todo [优化] menglingchao 使用ctx.. switch...
 		for v := range eventChan {
 			Key := string(v.Events[0].Kv.Key)
 			Value := string(v.Events[0].Kv.Value)
@@ -261,13 +256,13 @@ func (p *Mgr) WatchPrefixSendIntoChan(preFix string) error {
 				Value: Value,
 			}
 		}
-	}()
+	}(ctx)
 	return nil
 }
 
 // Get 检索键
-func (p *Mgr) Get(key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
-	getResponse, err := p.kv.Get(context.TODO(), key, opts...)
+func (p *Mgr) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+	getResponse, err := p.kv.Get(ctx, key, opts...)
 	if err != nil {
 		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
@@ -275,19 +270,20 @@ func (p *Mgr) Get(key string, opts ...clientv3.OpOption) (*clientv3.GetResponse,
 }
 
 // GetPrefix 查找以key为前缀的所有 key value
-func (p *Mgr) GetPrefix(key string) (*clientv3.GetResponse, error) {
+func (p *Mgr) GetPrefix(ctx context.Context, key string) (*clientv3.GetResponse, error) {
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 	}
-	return p.Get(key, opts...)
+	return p.Get(ctx, key, opts...)
 }
 
 // GetPrefixSendIntoChan  取得关心的前缀,放入 chan 中
-func (p *Mgr) GetPrefixSendIntoChan(preFix string) error {
-	getResponse, err := p.GetPrefix(preFix)
+func (p *Mgr) GetPrefixSendIntoChan(ctx context.Context, preFix string) error {
+	getResponse, err := p.GetPrefix(ctx, preFix)
 	if err != nil {
 		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
+	//todo [优化] menglingchao 使用ctx.. switch...
 	for _, v := range getResponse.Kvs {
 		p.options.outgoingEventChan <- &KV{
 			Key:   string(v.Key),
@@ -295,38 +291,4 @@ func (p *Mgr) GetPrefixSendIntoChan(preFix string) error {
 		}
 	}
 	return nil
-}
-
-// 多次重试 Start 和 KeepAlive
-func (p *Mgr) retryKeepAlive(ctx context.Context) error {
-	liblog.PrintfErr("renewing etcd lease, reconfiguring.grantLeaseMaxRetries:%v, grantLeaseIntervalSecond:%v",
-		*p.options.grantLeaseMaxRetries, grantLeaseRetryDuration/time.Second)
-	var failedGrantLeaseAttempts = 0
-	for {
-		if err := p.Start(ctx, p.options); err != nil {
-			failedGrantLeaseAttempts++
-			if *p.options.grantLeaseMaxRetries <= failedGrantLeaseAttempts {
-				return errors.WithMessagef(err, "%v exceeded max attempts to renew etcd lease %v %v",
-					libutil.GetCodeLocation(1), *p.options.grantLeaseMaxRetries, failedGrantLeaseAttempts)
-			}
-			liblog.PrintErr("error granting etcd lease, will retry.", err)
-			time.Sleep(grantLeaseRetryDuration)
-			continue
-		} else {
-		retryKeepAlive:
-			// 续租
-			if err = p.KeepAlive(ctx); err != nil {
-				failedGrantLeaseAttempts++
-				if *p.options.grantLeaseMaxRetries <= failedGrantLeaseAttempts {
-					return errors.WithMessagef(err, "%v exceeded max attempts to renew etcd lease %v %v",
-						libutil.GetCodeLocation(1), *p.options.grantLeaseMaxRetries, failedGrantLeaseAttempts)
-				}
-				liblog.PrintErr("error granting etcd lease, will retry.", err)
-				time.Sleep(grantLeaseRetryDuration)
-				goto retryKeepAlive
-			} else {
-				return nil
-			}
-		}
-	}
 }
