@@ -31,6 +31,18 @@ type Options struct {
 	dialTimeout          *time.Duration     // dialTimeout is the timeout for failing to establish a connection.
 	onFunc               OnFunc             // 回调 处理数据
 	outgoingEventChan    chan<- interface{} // 传出 channel
+	watchServicePrefix   *string            // 关注 服务 前缀
+	watchCommandPrefix   *string            // 关注 命令 前缀
+}
+
+func (p *Options) WithWatchServicePrefix(watchServicePrefix string) *Options {
+	p.watchServicePrefix = &watchServicePrefix
+	return p
+}
+
+func (p *Options) SetEtcdWatchCommandPrefix(watchCommandPrefix string) *Options {
+	p.watchCommandPrefix = &watchCommandPrefix
+	return p
 }
 
 func (p *Options) WithAddrs(addrs []string) *Options {
@@ -99,6 +111,12 @@ func mergeOptions(opts ...*Options) *Options {
 		}
 		if opt.outgoingEventChan != nil {
 			newOptions.WithOutgoingEventChan(opt.outgoingEventChan)
+		}
+		if opt.watchServicePrefix != nil {
+			newOptions.watchServicePrefix = opt.watchServicePrefix
+		}
+		if opt.watchCommandPrefix != nil {
+			newOptions.watchCommandPrefix = opt.watchCommandPrefix
 		}
 	}
 	return newOptions
