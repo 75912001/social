@@ -4,13 +4,21 @@ package error
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"sync"
+)
+
+var (
+	once sync.Once
 )
 
 // 错误信息
-var errMap = make(map[uint32]struct{})
+var errMap map[uint32]struct{}
 
-// Register 注册, 为了检测是否重复
-func Register(err *Error) error {
+// CheckForDuplicates 注册, 为了检测是否重复
+func CheckForDuplicates(err *Error) error {
+	once.Do(func() {
+		errMap = make(map[uint32]struct{})
+	})
 	if _, ok := errMap[err.Code]; ok { //不可重复
 		return errors.WithMessage(Duplicate, getCodeLocation(1).Error())
 	}
