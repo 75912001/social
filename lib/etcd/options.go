@@ -27,45 +27,45 @@ type Options struct {
 	addrs                []string           // 地址
 	ttl                  *int64             // Time To Live, etcd内部会按照 ttl/3 的时间(最小1秒),保持连接
 	grantLeaseMaxRetries *int               // 授权租约 最大 重试次数 默认:600
-	kvSlice              []KV               // 事件
+	kvSlice              []KV               // Put puts a key-value pair into etcd.
 	dialTimeout          *time.Duration     // dialTimeout is the timeout for failing to establish a connection.
 	onFunc               OnFunc             // 回调 处理数据
 	outgoingEventChan    chan<- interface{} // 传出 channel
 }
 
-func (p *Options) SetAddrs(addrs []string) *Options {
-	p.addrs = p.addrs[0:0]
+func (p *Options) WithAddrs(addrs []string) *Options {
+	p.addrs = p.addrs[:0]
 	p.addrs = append(p.addrs, addrs...)
 	return p
 }
 
-func (p *Options) SetTTL(ttl int64) *Options {
+func (p *Options) WithTTL(ttl int64) *Options {
 	p.ttl = &ttl
 	return p
 }
 
-func (p *Options) SetGrantLeaseMaxRetries(retries int) *Options {
+func (p *Options) WithGrantLeaseMaxRetries(retries int) *Options {
 	p.grantLeaseMaxRetries = &retries
 	return p
 }
 
-func (p *Options) SetKV(kv []KV) *Options {
-	p.kvSlice = p.kvSlice[0:0]
+func (p *Options) WithKV(kv []KV) *Options {
+	p.kvSlice = p.kvSlice[:0]
 	p.kvSlice = append(p.kvSlice, kv...)
 	return p
 }
 
-func (p *Options) SetDialTimeout(dialTimeout time.Duration) *Options {
+func (p *Options) WithDialTimeout(dialTimeout time.Duration) *Options {
 	p.dialTimeout = &dialTimeout
 	return p
 }
 
-func (p *Options) SetOnFunc(onFunc OnFunc) *Options {
+func (p *Options) WithOnFunc(onFunc OnFunc) *Options {
 	p.onFunc = onFunc
 	return p
 }
 
-func (p *Options) SetOutgoingEventChan(eventChan chan<- interface{}) *Options {
+func (p *Options) WithOutgoingEventChan(eventChan chan<- interface{}) *Options {
 	p.outgoingEventChan = eventChan
 	return p
 }
@@ -80,25 +80,25 @@ func mergeOptions(opts ...*Options) *Options {
 			continue
 		}
 		if len(opt.addrs) != 0 {
-			newOptions.SetAddrs(opt.addrs)
+			newOptions.WithAddrs(opt.addrs)
 		}
 		if opt.ttl != nil {
-			newOptions.SetTTL(*opt.ttl)
+			newOptions.WithTTL(*opt.ttl)
 		}
 		if opt.grantLeaseMaxRetries != nil {
-			newOptions.SetGrantLeaseMaxRetries(*opt.grantLeaseMaxRetries)
+			newOptions.WithGrantLeaseMaxRetries(*opt.grantLeaseMaxRetries)
 		}
 		if len(opt.kvSlice) != 0 {
-			newOptions.SetKV(opt.kvSlice)
+			newOptions.WithKV(opt.kvSlice)
 		}
 		if opt.dialTimeout != nil {
-			newOptions.SetDialTimeout(*opt.dialTimeout)
+			newOptions.WithDialTimeout(*opt.dialTimeout)
 		}
 		if opt.onFunc != nil {
-			newOptions.SetOnFunc(opt.onFunc)
+			newOptions.WithOnFunc(opt.onFunc)
 		}
 		if opt.outgoingEventChan != nil {
-			newOptions.SetOutgoingEventChan(opt.outgoingEventChan)
+			newOptions.WithOutgoingEventChan(opt.outgoingEventChan)
 		}
 	}
 	return newOptions
