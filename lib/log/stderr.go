@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime"
 	libconstant "social/lib/consts"
-	"time"
+	libtime "social/lib/time"
 )
 
 var stdErr = log.New(os.Stderr, "", 0)
@@ -30,7 +30,7 @@ func PrintErr(v ...interface{}) {
 		var buf bytes.Buffer
 		buf.Grow(bufferCapacity)
 		// 格式为  [时间][日志级别][UID:xxx][堆栈信息]自定义内容
-		buf.WriteString(fmt.Sprint("[", time.Now().Format(logTimeFormat), "]"))
+		buf.WriteString(fmt.Sprint("[", libtime.NowTime().Format(logTimeFormat), "]"))
 		buf.WriteString(fmt.Sprint("[", levelName[LevelError], "]"))
 		buf.WriteString("[UID:0]")
 		buf.WriteString(fmt.Sprint("[", fmt.Sprintf(callerInfoFormat, line, funcName), "]"))
@@ -57,7 +57,7 @@ func PrintfErr(format string, v ...interface{}) {
 		var buf bytes.Buffer
 		buf.Grow(bufferCapacity)
 		// 格式为  [时间][日志级别][UID:xxx][堆栈信息]自定义内容
-		buf.WriteString(fmt.Sprint("[", time.Now().Format(logTimeFormat), "]"))
+		buf.WriteString(fmt.Sprint("[", libtime.NowTime().Format(logTimeFormat), "]"))
 		buf.WriteString(fmt.Sprint("[", levelName[LevelError], "]"))
 		buf.WriteString("[UID:0]")
 		buf.WriteString(fmt.Sprint("[", fmt.Sprintf(callerInfoFormat, line, funcName), "]"))

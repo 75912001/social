@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"runtime"
 	libconstant "social/lib/consts"
+	libtime "social/lib/time"
 	"strconv"
 	"time"
 )
@@ -141,7 +142,7 @@ func (p *Entry) formatMessage() string {
 // log 记录日志
 func (p *Entry) log(level Level, skip int, v ...interface{}) {
 	p.level = level
-	p.time = time.Now()
+	p.time = libtime.NowTime()
 
 	if *p.logger.options.isReportCaller {
 		pc, _, line, ok := runtime.Caller(skip)
@@ -161,7 +162,7 @@ func (p *Entry) log(level Level, skip int, v ...interface{}) {
 // log 记录日志
 func (p *Entry) logf(level Level, skip int, format string, v ...interface{}) {
 	p.level = level
-	p.time = time.Now()
+	p.time = libtime.NowTime()
 
 	if *p.logger.options.isReportCaller {
 		pc, _, line, ok := runtime.Caller(skip)

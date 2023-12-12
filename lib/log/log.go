@@ -14,6 +14,7 @@ import (
 	libconstant "social/lib/consts"
 	liberror "social/lib/error"
 	libruntime "social/lib/runtime"
+	libtime "social/lib/time"
 	"social/lib/util"
 	"strconv"
 	"sync"
@@ -174,7 +175,7 @@ func (p *Mgr) newWriters() error {
 		}
 	}
 
-	second := time.Now().Unix()
+	second := libtime.NowTime().Unix()
 	duration := p.getLogDuration(second)
 	accessWriter, err := newAccessFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
