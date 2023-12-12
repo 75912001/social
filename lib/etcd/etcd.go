@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	libconsts "social/lib/consts"
 	liblog "social/lib/log"
+	libruntime "social/lib/runtime"
 	libutil "social/lib/util"
 	"sync"
 )
@@ -35,7 +36,7 @@ func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	err := configure(p.options)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 
 	p.client, err = clientv3.New(clientv3.Config{
@@ -43,7 +44,7 @@ func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
 		DialTimeout: *p.options.dialTimeout,
 	})
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	// 获得kv api子集
 	p.kv = clientv3.NewKV(p.client)
@@ -52,20 +53,20 @@ func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
 	// 申请一个ttl秒的租约
 	p.leaseGrantResponse, err = p.lease.Grant(ctx, *p.options.ttl)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	// 先删除
 	for _, v := range p.options.kvSlice {
 		_, err = p.Del(ctx, v.Key)
 		if err != nil {
-			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+			return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 		}
 	}
 	// 再添加
 	for _, v := range p.options.kvSlice {
 		_, err = p.PutWithLease(ctx, v.Key, v.Value)
 		if err != nil {
-			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+			return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 		}
 	}
 	return nil
@@ -76,7 +77,7 @@ func (p *Mgr) Run(ctx context.Context) error {
 	var err error
 	p.leaseKeepAliveResponseChannel, err = p.lease.KeepAlive(ctx, p.leaseGrantResponse.ID)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 
 	p.waitGroup.Add(1)
@@ -114,15 +115,15 @@ func (p *Mgr) Run(ctx context.Context) error {
 	}(ctxWithCancel)
 	// 关注 服务
 	if err = p.WatchPrefixSendIntoChan(ctxWithCancel, *p.options.watchServicePrefix); err != nil {
-		return errors.Errorf("WatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
+		return errors.Errorf("WatchPrefix err:%v %v", err, libruntime.GetCodeLocation(1).String())
 	}
 	// 获取 服务
 	if err = p.GetPrefixSendIntoChan(ctx, *p.options.watchServicePrefix); err != nil {
-		return errors.Errorf("GetPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
+		return errors.Errorf("GetPrefix err:%v %v", err, libruntime.GetCodeLocation(1).String())
 	}
 	// 关注 命令
 	if err = p.WatchPrefixSendIntoChan(ctxWithCancel, *p.options.watchCommandPrefix); err != nil {
-		return errors.Errorf("WatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
+		return errors.Errorf("WatchPrefix err:%v %v", err, libruntime.GetCodeLocation(1).String())
 	}
 	return nil
 }
@@ -133,13 +134,13 @@ func (p *Mgr) Stop() error {
 		for _, v := range p.options.kvSlice {
 			_, err := p.Del(context.Background(), v.Key)
 			if err != nil {
-				liblog.PrintErr(err, libutil.GetCodeLocation(1).String())
+				liblog.PrintErr(err, libruntime.GetCodeLocation(1).String())
 				//	return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 			}
 		}
 		err := p.client.Close()
 		if err != nil {
-			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+			return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 		}
 		p.client = nil
 	}
@@ -157,7 +158,7 @@ func (p *Mgr) Stop() error {
 func (p *Mgr) Put(ctx context.Context, key string, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
 	putResponse, err := p.kv.Put(ctx, key, value, opts...)
 	if err != nil {
-		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return nil, errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	return putResponse, nil
 }
@@ -174,7 +175,7 @@ func (p *Mgr) PutWithLease(ctx context.Context, key string, value string) (*clie
 func (p *Mgr) Del(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
 	deleteResponse, err := p.kv.Delete(ctx, key, opts...)
 	if err != nil {
-		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return nil, errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	return deleteResponse, nil
 }
@@ -253,7 +254,7 @@ func (p *Mgr) WatchPrefixSendIntoChan(ctx context.Context, preFix string) error 
 func (p *Mgr) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
 	getResponse, err := p.kv.Get(ctx, key, opts...)
 	if err != nil {
-		return nil, errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return nil, errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	return getResponse, nil
 }
@@ -270,7 +271,7 @@ func (p *Mgr) GetPrefix(ctx context.Context, key string) (*clientv3.GetResponse,
 func (p *Mgr) GetPrefixSendIntoChan(ctx context.Context, preFix string) error {
 	getResponse, err := p.GetPrefix(ctx, preFix)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	for _, v := range getResponse.Kvs {
 		p.options.outgoingEventChan <- &KV{

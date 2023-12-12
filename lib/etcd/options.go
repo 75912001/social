@@ -3,7 +3,7 @@ package etcd
 import (
 	"github.com/pkg/errors"
 	liberror "social/lib/error"
-	libutil "social/lib/util"
+	libruntime "social/lib/runtime"
 	"time"
 )
 
@@ -125,7 +125,7 @@ func mergeOptions(opts ...*Options) *Options {
 // 配置
 func configure(opt *Options) error {
 	if len(opt.addrs) == 0 {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	if opt.ttl == nil {
 		opt.ttl = &TtlSecondDefault
@@ -134,16 +134,16 @@ func configure(opt *Options) error {
 		opt.grantLeaseMaxRetries = &grantLeaseMaxRetriesDefault
 	}
 	if len(opt.kvSlice) == 0 {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	if opt.dialTimeout == nil {
 		opt.dialTimeout = &dialTimeoutDefault
 	}
 	if opt.onFunc == nil {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	if opt.outgoingEventChan == nil {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	return nil
 }

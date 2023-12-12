@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 	libconsts "social/lib/consts"
 	liblog "social/lib/log"
+	libruntime "social/lib/runtime"
 	libutil "social/lib/util"
 	"time"
 )
@@ -42,7 +43,7 @@ func (p *Mgr) retryStartAndRun(ctx context.Context) error {
 			failedGrantLeaseAttempts++
 			if *p.options.grantLeaseMaxRetries <= failedGrantLeaseAttempts {
 				return errors.WithMessagef(err, "%v exceeded max attempts to renew etcd lease %v %v",
-					libutil.GetCodeLocation(1), *p.options.grantLeaseMaxRetries, failedGrantLeaseAttempts)
+					libruntime.GetCodeLocation(1), *p.options.grantLeaseMaxRetries, failedGrantLeaseAttempts)
 			}
 			liblog.PrintErr("error granting etcd lease, will retry.", err)
 			time.Sleep(grantLeaseRetryDuration)
@@ -54,7 +55,7 @@ func (p *Mgr) retryStartAndRun(ctx context.Context) error {
 				failedGrantLeaseAttempts++
 				if *p.options.grantLeaseMaxRetries <= failedGrantLeaseAttempts {
 					return errors.WithMessagef(err, "%v exceeded max attempts to renew etcd lease %v %v",
-						libutil.GetCodeLocation(1), *p.options.grantLeaseMaxRetries, failedGrantLeaseAttempts)
+						libruntime.GetCodeLocation(1), *p.options.grantLeaseMaxRetries, failedGrantLeaseAttempts)
 				}
 				liblog.PrintErr("error granting etcd lease, will retry.", err)
 				time.Sleep(grantLeaseRetryDuration)
