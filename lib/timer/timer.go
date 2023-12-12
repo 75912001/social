@@ -8,9 +8,11 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"runtime/debug"
-	libconstant "social/pkg/lib/constant"
-	liblog "social/pkg/lib/log"
-	libutil "social/pkg/lib/util"
+	libconstant "social/lib/consts"
+	"social/lib/log"
+	libruntime "social/lib/runtime"
+	libtime "social/lib/time"
+	"social/lib/util"
 	"sync"
 	"time"
 )
@@ -32,7 +34,7 @@ func GetInstance() *Mgr {
 
 // Mgr 定时器管理器
 type Mgr struct {
-	options         *options
+	options         *Options
 	secondSlice     [cycleSize]cycle // 秒,数据
 	millisecondList list.List        // 毫秒,数据
 	cancelFunc      context.CancelFunc
@@ -43,7 +45,7 @@ type Mgr struct {
 
 // ShadowTimeSecond 叠加偏移量的秒
 func (p *Mgr) ShadowTimeSecond() int64 {
-	return time.Now().Unix() + SecondOffset
+	return libtime.NowTime().Unix() + SecondOffset
 }
 
 // OnFun 回调定时器函数(使用协程回调)
@@ -52,13 +54,13 @@ type OnFun func(arg interface{})
 // 每秒更新
 func (p *Mgr) funcSecond(ctx context.Context) {
 	defer func() {
-		if libutil.IsRelease() {
+		if util.IsRelease() {
 			if err := recover(); err != nil {
-				liblog.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+				log.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		liblog.PrintInfo(libconstant.GoroutineDone)
+		log.PrintInfo(libconstant.GoroutineDone)
 	}()
 	idleDelay := time.NewTimer(*p.options.scanSecondDuration)
 	defer func() {
@@ -67,7 +69,7 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			liblog.PrintInfo(libconstant.GoroutineDone)
+			log.PrintInfo(libconstant.GoroutineDone)
 			return
 		case v := <-p.secondChan:
 			s := v.(*Second)
@@ -82,13 +84,13 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 // 每millisecond个毫秒更新
 func (p *Mgr) funcMillisecond(ctx context.Context) {
 	defer func() {
-		if libutil.IsRelease() {
+		if util.IsRelease() {
 			if err := recover(); err != nil {
-				liblog.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+				log.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		liblog.PrintInfo(libconstant.GoroutineDone)
+		log.PrintInfo(libconstant.GoroutineDone)
 	}()
 	scanMillisecondDuration := *p.options.scanMillisecondDuration
 	scanMillisecond := scanMillisecondDuration / time.Millisecond
@@ -96,17 +98,17 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 	defer func() {
 		idleDelay.Stop()
 	}()
-	nextMillisecond := time.Duration(time.Now().UnixMilli()) + scanMillisecond
+	nextMillisecond := time.Duration(libtime.NowTime().UnixMilli()) + scanMillisecond
 
 	for {
 		select {
 		case <-ctx.Done():
-			liblog.PrintInfo(libconstant.GoroutineDone)
+			log.PrintInfo(libconstant.GoroutineDone)
 			return
 		case v := <-p.milliSecondChan:
 			p.millisecondList.PushBack(v)
 		case <-idleDelay.C:
-			nowMillisecond := time.Now().UnixMilli()
+			nowMillisecond := libtime.NowTime().UnixMilli()
 			reset := scanMillisecondDuration - (time.Duration(nowMillisecond)-nextMillisecond)*time.Millisecond
 			idleDelay.Reset(reset)
 
@@ -119,13 +121,13 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 // Deprecated: [bug]当扫描频率的毫秒数较低的时候,来不及处理,会累加...  每millisecond个毫秒更新
 func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 	defer func() {
-		if libutil.IsRelease() {
+		if util.IsRelease() {
 			if err := recover(); err != nil {
-				liblog.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+				log.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		liblog.PrintInfo(libconstant.GoroutineDone)
+		log.PrintInfo(libconstant.GoroutineDone)
 	}()
 	ticker := time.NewTicker(*p.options.scanMillisecondDuration)
 	defer func() {
@@ -134,22 +136,22 @@ func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			liblog.PrintInfo(libconstant.GoroutineDone)
+			log.PrintInfo(libconstant.GoroutineDone)
 			return
 		case v := <-p.milliSecondChan:
 			p.millisecondList.PushBack(v)
 		case <-ticker.C:
-			p.scanMillisecond(time.Now().UnixMilli())
+			p.scanMillisecond(libtime.NowTime().UnixMilli())
 		}
 	}
 }
 
 // Start
 // [NOTE] 处理定时器相关数据,必须与该outgoingTimeoutChan线性处理.如:在同一个goroutine select中处理数据
-func (p *Mgr) Start(ctx context.Context, opts ...*options) error {
+func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	if err := p.configure(p.options); err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 
 	ctxWithCancel, cancelFunc := context.WithCancel(ctx)
