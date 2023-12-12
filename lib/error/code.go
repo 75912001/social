@@ -96,7 +96,7 @@ var (
 	// NotImplemented 未实现
 	NotImplemented = createError(0xf02e, "NotImplemented", "not implemented")
 	// Unknown 未知
-	Unknown = createError(0xf02f, "Unknown", "unknown")
+	Unknown = createError(0xffff, "Unknown", "unknown")
 	// 0xffff
 )
 
