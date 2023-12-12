@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
-	libconstant "social/pkg/lib/constant"
+	libconstant "social/lib/consts"
 	"time"
 )
 

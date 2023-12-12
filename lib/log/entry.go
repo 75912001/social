@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	libconstant "social/pkg/lib/constant"
+	libconstant "social/lib/consts"
 	"strconv"
 	"time"
 )

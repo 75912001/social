@@ -2,7 +2,7 @@ package log
 
 import (
 	"github.com/pkg/errors"
-	libutil "social/pkg/lib/util"
+	libutil "social/lib/util"
 )
 
 // Hook 钩子

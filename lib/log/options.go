@@ -3,8 +3,8 @@ package log
 import (
 	"github.com/pkg/errors"
 	"os"
-	liberror "social/pkg/lib/error"
-	libutil "social/pkg/lib/util"
+	liberror "social/lib/error"
+	libutil "social/lib/util"
 )
 
 // options contains options to configure a server instance. Each option can be set through setter functions. See
@@ -26,37 +26,37 @@ func NewOptions() *options {
 	return ops
 }
 
-func (p *options) SetLevel(level Level) *options {
+func (p *options) WithLevel(level Level) *options {
 	p.level = &level
 	return p
 }
 
-func (p *options) SetAbsPath(absPath string) *options {
+func (p *options) WithAbsPath(absPath string) *options {
 	p.absPath = &absPath
 	return p
 }
 
-func (p *options) SetIsReportCaller(isReportCaller bool) *options {
+func (p *options) WithIsReportCaller(isReportCaller bool) *options {
 	p.isReportCaller = &isReportCaller
 	return p
 }
 
-func (p *options) SetNamePrefix(namePrefix string) *options {
+func (p *options) WithNamePrefix(namePrefix string) *options {
 	p.namePrefix = &namePrefix
 	return p
 }
 
-func (p *options) SetHooks(hooks LevelHooks) *options {
+func (p *options) WithHooks(hooks LevelHooks) *options {
 	p.hooks = hooks
 	return p
 }
 
-func (p *options) SetIsWriteFile(isWriteFile bool) *options {
+func (p *options) WithIsWriteFile(isWriteFile bool) *options {
 	p.isWriteFile = &isWriteFile
 	return p
 }
 
-func (p *options) SetEnablePool(enablePool bool) *options {
+func (p *options) WithEnablePool(enablePool bool) *options {
 	p.enablePool = &enablePool
 	return p
 }

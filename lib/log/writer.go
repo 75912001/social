@@ -4,12 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"os"
-	libutil "social/pkg/lib/util"
-)
-
-const (
-	accessLogFileBaseName = "access.log"
-	errorLogFileBaseName  = "error.log"
+	libutil "social/lib/util"
 )
 
 // 生成 access log Writer

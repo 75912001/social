@@ -11,24 +11,12 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
-	libconstant "social/pkg/lib/constant"
-	liberror "social/pkg/lib/error"
-	libutil "social/pkg/lib/util"
+	libconstant "social/lib/consts"
+	liberror "social/lib/error"
+	"social/lib/util"
 	"strconv"
 	"sync"
 	"time"
-)
-
-const (
-	logChannelCapacity = 100000            // 日志通道最大容量
-	logTimeFormat      = "15:04:05.000000" // 日志时间格式 时:分:秒.微秒
-	callerInfoFormat   = "Line:%d %s"      // 堆栈信息格式 例如 Line:69 server/xxx/xx/x/log.TestExample
-	TraceIDKey         = "TraceID"         // 日志traceId key
-	UserIDKey          = "UID"             // 日志用户ID key
-	bufferCapacity     = 300               // buffer 容量
-	calldepth1         = 1
-	calldepth2         = calldepth1 + 1 //打印堆栈时候跳过的层数
-	calldepth3         = calldepth2 + 1
 )
 
 var (
@@ -83,7 +71,7 @@ func (p *Mgr) GetLevel() Level {
 func (p *Mgr) Start(_ context.Context, opts ...*options) error {
 	p.options = mergeOptions(opts...)
 	if err := configure(p.options); err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, util.GetCodeLocation(1).String())
 	}
 
 	p.logChan = make(chan *entry, logChannelCapacity)
@@ -95,7 +83,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*options) error {
 
 	// 初始化各级别的日志输出
 	if err := p.newWriters(); err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, util.GetCodeLocation(1).String())
 	}
 
 	if p.options.IsEnablePool() {
@@ -109,7 +97,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*options) error {
 	p.waitGroupOutPut.Add(1)
 	go func() {
 		defer func() {
-			if libutil.IsRelease() {
+			if util.IsRelease() {
 				if err := recover(); err != nil {
 					PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
 				}
@@ -125,7 +113,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*options) error {
 // getLogDuration 取得日志刻度
 func (p *Mgr) getLogDuration(sec int64) int {
 	var logFormat string
-	if libutil.IsRelease() {
+	if util.IsRelease() {
 		logFormat = "2006010215" //年月日小时
 	} else {
 		logFormat = "20060102" //年月日
@@ -170,9 +158,9 @@ func (p *Mgr) doLog() {
 // SetLevel 设置日志等级
 func (p *Mgr) SetLevel(lv Level) error {
 	if lv < LevelOff || LevelOn < lv {
-		return errors.WithMessage(liberror.Level, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Level, util.GetCodeLocation(1).String())
 	}
-	p.options.SetLevel(lv)
+	p.options.WithLevel(lv)
 	return nil
 }
 
@@ -181,7 +169,7 @@ func (p *Mgr) newWriters() error {
 	// 检查是否要关闭文件
 	for i := range p.openFiles {
 		if err := p.openFiles[i].Close(); err != nil {
-			return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+			return errors.WithMessage(err, util.GetCodeLocation(1).String())
 		}
 	}
 
@@ -189,11 +177,11 @@ func (p *Mgr) newWriters() error {
 	duration := p.getLogDuration(second)
 	accessWriter, err := newAccessFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, util.GetCodeLocation(1).String())
 	}
 	errorWriter, err := newErrorFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, util.GetCodeLocation(1).String())
 	}
 	p.logDuration = duration
 
