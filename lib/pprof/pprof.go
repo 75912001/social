@@ -4,9 +4,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"runtime/debug"
-	libconstant "social/pkg/lib/constant"
-	liblog "social/pkg/lib/log"
-	libutil "social/pkg/lib/util"
+	libconstant "social/lib/consts"
+	liblog "social/lib/log"
+	libutil "social/lib/util"
 )
 
 // StartHTTPprof 开启http采集分析
