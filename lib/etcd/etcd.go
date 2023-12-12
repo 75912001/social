@@ -11,31 +11,6 @@ import (
 	"sync"
 )
 
-//var (
-//	instance *Mgr
-//	once     sync.Once
-//)
-//
-//// GetInstance 获取
-//func GetInstance() *Mgr {
-//	once.Do(func() {
-//		instance = NewMgr()
-//	})
-//	return instance
-//}
-
-// IsEnable 是否 开启
-//func IsEnable() bool {
-//	if instance == nil {
-//		return false
-//	}
-//	return instance.client != nil
-//}
-
-//func NewMgr() *Mgr {
-//	return new(Mgr)
-//}
-
 // Mgr 管理器
 type Mgr struct {
 	client                        *clientv3.Client
@@ -132,13 +107,13 @@ func (p *Mgr) Run(ctx context.Context) error {
 				if ok {
 					continue
 				}
-				p.abnormal()
+				p.abnormal(ctx)
 				return
 			}
 		}
 	}(ctxWithCancel)
 	// 关注 服务
-	if err = p.WatchPrefixSendIntoChan(ctx, *p.options.watchServicePrefix); err != nil {
+	if err = p.WatchPrefixSendIntoChan(ctxWithCancel, *p.options.watchServicePrefix); err != nil {
 		return errors.Errorf("WatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	// 获取 服务
@@ -146,7 +121,7 @@ func (p *Mgr) Run(ctx context.Context) error {
 		return errors.Errorf("GetPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	// 关注 命令
-	if err = p.WatchPrefixSendIntoChan(ctx, *p.options.watchCommandPrefix); err != nil {
+	if err = p.WatchPrefixSendIntoChan(ctxWithCancel, *p.options.watchCommandPrefix); err != nil {
 		return errors.Errorf("WatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
 	return nil
@@ -247,15 +222,29 @@ func (p *Mgr) WatchPrefixSendIntoChan(ctx context.Context, preFix string) error 
 			}
 			liblog.PrintInfo(libconsts.GoroutineDone)
 		}()
-		//todo [优化] menglingchao 使用ctx.. switch...
-		for v := range eventChan {
-			Key := string(v.Events[0].Kv.Key)
-			Value := string(v.Events[0].Kv.Value)
-			p.options.outgoingEventChan <- &KV{
-				Key:   Key,
-				Value: Value,
+		for {
+			select {
+			case <-ctx.Done():
+				liblog.PrintInfo(libconsts.GoroutineDone)
+				return
+			case v, ok := <-eventChan:
+				liblog.PrintInfo(v, ok)
+				Key := string(v.Events[0].Kv.Key)
+				Value := string(v.Events[0].Kv.Value)
+				p.options.outgoingEventChan <- &KV{
+					Key:   Key,
+					Value: Value,
+				}
 			}
 		}
+		//for v := range eventChan {
+		//	Key := string(v.Events[0].Kv.Key)
+		//	Value := string(v.Events[0].Kv.Value)
+		//	p.options.outgoingEventChan <- &KV{
+		//		Key:   Key,
+		//		Value: Value,
+		//	}
+		//}
 	}(ctx)
 	return nil
 }
@@ -283,7 +272,6 @@ func (p *Mgr) GetPrefixSendIntoChan(ctx context.Context, preFix string) error {
 	if err != nil {
 		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
 	}
-	//todo [优化] menglingchao 使用ctx.. switch...
 	for _, v := range getResponse.Kvs {
 		p.options.outgoingEventChan <- &KV{
 			Key:   string(v.Key),

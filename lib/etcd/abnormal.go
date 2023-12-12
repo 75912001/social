@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (p *Mgr) abnormal() {
+func (p *Mgr) abnormal(ctx context.Context) {
 	liblog.PrintErr("etcd lease Run abnormal, retrying")
 	go func(ctx context.Context) {
 		defer func() {
@@ -29,7 +29,7 @@ func (p *Mgr) abnormal() {
 			liblog.PrintErr(libconsts.Retry, libconsts.Failure, err)
 			return
 		}
-	}(context.Background())
+	}(ctx)
 }
 
 // 多次重试 Start 和 Run

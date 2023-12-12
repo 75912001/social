@@ -40,7 +40,7 @@ func (p *Options) WithWatchServicePrefix(watchServicePrefix string) *Options {
 	return p
 }
 
-func (p *Options) SetEtcdWatchCommandPrefix(watchCommandPrefix string) *Options {
+func (p *Options) WithWatchCommandPrefix(watchCommandPrefix string) *Options {
 	p.watchCommandPrefix = &watchCommandPrefix
 	return p
 }
