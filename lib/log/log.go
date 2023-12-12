@@ -13,6 +13,7 @@ import (
 	"runtime/debug"
 	libconstant "social/lib/consts"
 	liberror "social/lib/error"
+	libruntime "social/lib/runtime"
 	"social/lib/util"
 	"strconv"
 	"sync"
@@ -42,10 +43,10 @@ func IsEnable() bool {
 
 // Mgr 日志
 type Mgr struct {
-	options *options
+	options *Options
 
 	loggerSlice     [LevelOn]*log.Logger // 日志实例 note:此处非协程安全
-	logChan         chan *entry          // 日志写入通道
+	logChan         chan *Entry          // 日志写入通道
 	waitGroupOutPut sync.WaitGroup       // 同步锁
 	logDuration     int                  // 日志分割刻度 按天或者小时  e.g.:20210819或2021081901
 	openFiles       []*os.File           // 当前打开的文件
@@ -68,13 +69,13 @@ func (p *Mgr) GetLevel() Level {
 //	参数:
 //		absPath:日志绝对路径
 //		namePrefix:日志名 前缀
-func (p *Mgr) Start(_ context.Context, opts ...*options) error {
+func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
 	p.options = mergeOptions(opts...)
 	if err := configure(p.options); err != nil {
-		return errors.WithMessage(err, util.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 
-	p.logChan = make(chan *entry, logChannelCapacity)
+	p.logChan = make(chan *Entry, logChannelCapacity)
 
 	// 初始化logger
 	for i := LevelOff; i < LevelOn; i++ {
@@ -83,13 +84,13 @@ func (p *Mgr) Start(_ context.Context, opts ...*options) error {
 
 	// 初始化各级别的日志输出
 	if err := p.newWriters(); err != nil {
-		return errors.WithMessage(err, util.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 
 	if p.options.IsEnablePool() {
 		p.pool = &sync.Pool{
 			New: func() interface{} {
-				return new(entry)
+				return new(Entry)
 			},
 		}
 	}
@@ -158,7 +159,7 @@ func (p *Mgr) doLog() {
 // SetLevel 设置日志等级
 func (p *Mgr) SetLevel(lv Level) error {
 	if lv < LevelOff || LevelOn < lv {
-		return errors.WithMessage(liberror.Level, util.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Level, libruntime.GetCodeLocation(1).String())
 	}
 	p.options.WithLevel(lv)
 	return nil
@@ -169,7 +170,7 @@ func (p *Mgr) newWriters() error {
 	// 检查是否要关闭文件
 	for i := range p.openFiles {
 		if err := p.openFiles[i].Close(); err != nil {
-			return errors.WithMessage(err, util.GetCodeLocation(1).String())
+			return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 		}
 	}
 
@@ -177,11 +178,11 @@ func (p *Mgr) newWriters() error {
 	duration := p.getLogDuration(second)
 	accessWriter, err := newAccessFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
-		return errors.WithMessage(err, util.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	errorWriter, err := newErrorFileWriter(*p.options.absPath, *p.options.namePrefix, duration)
 	if err != nil {
-		return errors.WithMessage(err, util.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	p.logDuration = duration
 
@@ -227,7 +228,7 @@ func (p *Mgr) Stop() error {
 }
 
 // fireHooks 处理钩子
-func (p *Mgr) fireHooks(entry *entry) {
+func (p *Mgr) fireHooks(entry *Entry) {
 	if 0 == len(p.options.hooks) {
 		return
 	}
@@ -239,21 +240,21 @@ func (p *Mgr) fireHooks(entry *entry) {
 }
 
 // WithField 由field创建日志信息 默认大小2(cap:2*2=4)
-func (p *Mgr) WithField(key string, value interface{}) *entry {
+func (p *Mgr) WithField(key string, value interface{}) *Entry {
 	entry := newEntry(p)
 	entry.fields = make(fields, 0, 4)
 	return entry.WithField(key, value)
 }
 
 // WithFields 由fields创建日志信息 默认大小4(cap:4*2=8)
-func (p *Mgr) WithFields(f fields) *entry {
+func (p *Mgr) WithFields(f fields) *Entry {
 	entry := newEntry(p)
 	entry.fields = make(fields, 0, 8)
 	return entry.WithFields(f)
 }
 
 // WithContext 由ctx创建日志信息
-func (p *Mgr) WithContext(ctx context.Context) *entry {
+func (p *Mgr) WithContext(ctx context.Context) *Entry {
 	entry := newEntry(p)
 	return entry.WithContext(ctx)
 }

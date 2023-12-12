@@ -15,8 +15,8 @@ import (
 // fields 日志数据字段
 type fields []interface{}
 
-// entry 日志数据信息
-type entry struct {
+// Entry 日志数据信息
+type Entry struct {
 	logger     *Mgr
 	time       time.Time //生成日志的时间
 	level      Level     //日志级别
@@ -26,7 +26,7 @@ type entry struct {
 	fields     fields //key,value
 }
 
-func (p *entry) reset() {
+func (p *Entry) reset() {
 	p.logger = nil
 	p.fields = nil
 	p.level = LevelOff
@@ -36,38 +36,38 @@ func (p *entry) reset() {
 }
 
 // newEntry 创建
-func newEntry(logger *Mgr) *entry {
+func newEntry(logger *Mgr) *Entry {
 	if logger.options.IsEnablePool() {
-		e := logger.pool.Get().(*entry)
+		e := logger.pool.Get().(*Entry)
 		e.logger = logger
 		return e
 	} else {
-		return &entry{
+		return &Entry{
 			logger: logger,
 		}
 	}
 }
 
 // WithContext 由ctx创建Entry
-func (p *entry) WithContext(ctx context.Context) *entry {
+func (p *Entry) WithContext(ctx context.Context) *Entry {
 	p.ctx = ctx
 	return p
 }
 
 // WithField 由field创建Entry
-func (p *entry) WithField(key string, value interface{}) *entry {
+func (p *Entry) WithField(key string, value interface{}) *Entry {
 	p.fields = append(p.fields, key, value)
 	return p
 }
 
 // WithFields 由多个field创建Entry
-func (p *entry) WithFields(fields fields) *entry {
+func (p *Entry) WithFields(fields fields) *Entry {
 	p.fields = append(p.fields, fields...)
 	return p
 }
 
 // formatMessage 格式化日志信息
-func (p *entry) formatMessage() string {
+func (p *Entry) formatMessage() string {
 	// 格式为  [时间][日志级别][UID:xxx][堆栈信息][TraceID:xxx]{fields-key:fields:val}...{}自定义内容
 	var buf bytes.Buffer
 	buf.Grow(bufferCapacity)
@@ -139,7 +139,7 @@ func (p *entry) formatMessage() string {
 }
 
 // log 记录日志
-func (p *entry) log(level Level, skip int, v ...interface{}) {
+func (p *Entry) log(level Level, skip int, v ...interface{}) {
 	p.level = level
 	p.time = time.Now()
 
@@ -159,7 +159,7 @@ func (p *entry) log(level Level, skip int, v ...interface{}) {
 }
 
 // log 记录日志
-func (p *entry) logf(level Level, skip int, format string, v ...interface{}) {
+func (p *Entry) logf(level Level, skip int, format string, v ...interface{}) {
 	p.level = level
 	p.time = time.Now()
 
@@ -179,7 +179,7 @@ func (p *entry) logf(level Level, skip int, format string, v ...interface{}) {
 }
 
 // Trace 追踪日志
-func (p *entry) Trace(v ...interface{}) {
+func (p *Entry) Trace(v ...interface{}) {
 	if *p.logger.options.level < LevelTrace {
 		return
 	}
@@ -187,7 +187,7 @@ func (p *entry) Trace(v ...interface{}) {
 }
 
 // Tracef 追踪日志
-func (p *entry) Tracef(format string, v ...interface{}) {
+func (p *Entry) Tracef(format string, v ...interface{}) {
 	if *p.logger.options.level < LevelTrace {
 		return
 	}
@@ -195,7 +195,7 @@ func (p *entry) Tracef(format string, v ...interface{}) {
 }
 
 // Debug 调试日志
-func (p *entry) Debug(v ...interface{}) {
+func (p *Entry) Debug(v ...interface{}) {
 	if *p.logger.options.level < LevelDebug {
 		return
 	}
@@ -203,7 +203,7 @@ func (p *entry) Debug(v ...interface{}) {
 }
 
 // Debugf 调试日志
-func (p *entry) Debugf(format string, v ...interface{}) {
+func (p *Entry) Debugf(format string, v ...interface{}) {
 	if *p.logger.options.level < LevelDebug {
 		return
 	}
@@ -211,7 +211,7 @@ func (p *entry) Debugf(format string, v ...interface{}) {
 }
 
 // Info 信息日志
-func (p *entry) Info(v ...interface{}) {
+func (p *Entry) Info(v ...interface{}) {
 	if *p.logger.options.level < LevelInfo {
 		return
 	}
@@ -219,7 +219,7 @@ func (p *entry) Info(v ...interface{}) {
 }
 
 // Infof 信息日志
-func (p *entry) Infof(format string, v ...interface{}) {
+func (p *Entry) Infof(format string, v ...interface{}) {
 	if *p.logger.options.level < LevelInfo {
 		return
 	}
@@ -227,7 +227,7 @@ func (p *entry) Infof(format string, v ...interface{}) {
 }
 
 // Warn 警告日志
-func (p *entry) Warn(v ...interface{}) {
+func (p *Entry) Warn(v ...interface{}) {
 	if *p.logger.options.level < LevelWarn {
 		return
 	}
@@ -235,7 +235,7 @@ func (p *entry) Warn(v ...interface{}) {
 }
 
 // Warnf 警告日志
-func (p *entry) Warnf(format string, v ...interface{}) {
+func (p *Entry) Warnf(format string, v ...interface{}) {
 	if *p.logger.options.level < LevelWarn {
 		return
 	}
@@ -243,7 +243,7 @@ func (p *entry) Warnf(format string, v ...interface{}) {
 }
 
 // Error 错误日志
-func (p *entry) Error(v ...interface{}) {
+func (p *Entry) Error(v ...interface{}) {
 	if *p.logger.options.level < LevelError {
 		return
 	}
@@ -251,7 +251,7 @@ func (p *entry) Error(v ...interface{}) {
 }
 
 // Errorf 错误日志
-func (p *entry) Errorf(format string, v ...interface{}) {
+func (p *Entry) Errorf(format string, v ...interface{}) {
 	if *p.logger.options.level < LevelError {
 		return
 	}
@@ -259,7 +259,7 @@ func (p *entry) Errorf(format string, v ...interface{}) {
 }
 
 // Fatal 致命日志
-func (p *entry) Fatal(v ...interface{}) {
+func (p *Entry) Fatal(v ...interface{}) {
 	if *p.logger.options.level < LevelFatal {
 		return
 	}
@@ -267,7 +267,7 @@ func (p *entry) Fatal(v ...interface{}) {
 }
 
 // Fatalf 致命日志
-func (p *entry) Fatalf(format string, v ...interface{}) {
+func (p *Entry) Fatalf(format string, v ...interface{}) {
 	if *p.logger.options.level < LevelFatal {
 		return
 	}

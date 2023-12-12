@@ -4,12 +4,12 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	liberror "social/lib/error"
-	libutil "social/lib/util"
+	libruntime "social/lib/runtime"
 )
 
-// options contains options to configure a server instance. Each option can be set through setter functions. See
+// Options contains Options to configure a server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
-type options struct {
+type Options struct {
 	level          *Level     // 日志等级
 	absPath        *string    // 日志绝对路径
 	isReportCaller *bool      // 是否打印调用信息 default: true
@@ -20,61 +20,61 @@ type options struct {
 }
 
 // NewOptions 新的Options
-func NewOptions() *options {
-	ops := new(options)
+func NewOptions() *Options {
+	ops := new(Options)
 	ops.hooks = make(LevelHooks)
 	return ops
 }
 
-func (p *options) WithLevel(level Level) *options {
+func (p *Options) WithLevel(level Level) *Options {
 	p.level = &level
 	return p
 }
 
-func (p *options) WithAbsPath(absPath string) *options {
+func (p *Options) WithAbsPath(absPath string) *Options {
 	p.absPath = &absPath
 	return p
 }
 
-func (p *options) WithIsReportCaller(isReportCaller bool) *options {
+func (p *Options) WithIsReportCaller(isReportCaller bool) *Options {
 	p.isReportCaller = &isReportCaller
 	return p
 }
 
-func (p *options) WithNamePrefix(namePrefix string) *options {
+func (p *Options) WithNamePrefix(namePrefix string) *Options {
 	p.namePrefix = &namePrefix
 	return p
 }
 
-func (p *options) WithHooks(hooks LevelHooks) *options {
+func (p *Options) WithHooks(hooks LevelHooks) *Options {
 	p.hooks = hooks
 	return p
 }
 
-func (p *options) WithIsWriteFile(isWriteFile bool) *options {
+func (p *Options) WithIsWriteFile(isWriteFile bool) *Options {
 	p.isWriteFile = &isWriteFile
 	return p
 }
 
-func (p *options) WithEnablePool(enablePool bool) *options {
+func (p *Options) WithEnablePool(enablePool bool) *Options {
 	p.enablePool = &enablePool
 	return p
 }
 
-func (p *options) IsEnablePool() bool {
+func (p *Options) IsEnablePool() bool {
 	return *p.enablePool
 }
 
 // AddHooks 添加钩子
-func (p *options) AddHooks(hook Hook) *options {
+func (p *Options) AddHooks(hook Hook) *Options {
 	p.hooks.add(hook)
 	return p
 }
 
-// mergeOptions combines the given *options into a single *options in a last one wins fashion.
-// The specified options are merged with the existing options on the server, with the specified options taking
+// mergeOptions combines the given *Options into a single *Options in a last one wins fashion.
+// The specified Options are merged with the existing Options on the server, with the specified Options taking
 // precedence.
-func mergeOptions(opts ...*options) *options {
+func mergeOptions(opts ...*Options) *Options {
 	so := NewOptions()
 	for _, opt := range opts {
 		if opt == nil {
@@ -106,12 +106,12 @@ func mergeOptions(opts ...*options) *options {
 }
 
 // 配置
-func configure(opts *options) error {
+func configure(opts *Options) error {
 	if opts.level == nil {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	if opts.absPath == nil {
-		return errors.WithMessage(liberror.Param, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	if opts.isReportCaller == nil {
 		var reportCaller = true
@@ -126,7 +126,7 @@ func configure(opts *options) error {
 		opts.enablePool = &enablePool
 	}
 	if err := os.MkdirAll(*opts.absPath, os.ModePerm); err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	return nil
 }
