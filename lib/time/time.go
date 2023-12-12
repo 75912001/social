@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-const OneDaySecond int64 = 86400
-const OneMinuteSecond int64 = 60
-
 // GenYMD 获取 e.g.:20210819
 //
 //	返回YMD
@@ -41,7 +38,7 @@ type Mgr struct {
 
 // Update 更新时间管理器中的,当前时间
 func (p *Mgr) Update() {
-	p.Time = time.Now()
+	p.Time = time.Now().UTC()
 	p.Second = p.Time.Unix()
 	p.Millisecond = p.Time.UnixMilli() // UnixNano() / int64(time.Millisecond)
 }
