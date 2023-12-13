@@ -2,6 +2,10 @@ package bench
 
 import "time"
 
+type ISubBench interface {
+	Load(strJson string) error // 加载 配置文件
+}
+
 type MongoDB struct {
 	Addrs           []string       `json:"addrs"`
 	User            string         `json:"user"`
@@ -24,8 +28,4 @@ type DBAsync struct {
 	Model        uint32 `json:"model"`                //DB异步消费模式 default consumer.ModelAsyncOne
 	BulkWriteMax uint32 `json:"bulkWriteMax"`         //DB合并写 单个集合最大合批数量 default common.BulkWriteMax
 	BulkWriteMs  uint32 `json:"bulkWriteMillisecond"` //DB合并写周期  单位毫秒 default common.BatchExecMaxMilliSecond
-}
-
-type ISubBench interface {
-	Load(strJson string) error // 加载 配置文件
 }

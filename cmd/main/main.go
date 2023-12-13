@@ -1,71 +1,105 @@
 package main
 
 import (
+	"context"
 	"os"
-	"social/cmd/blog"
-	"social/cmd/cleansing"
-	"social/cmd/friend"
-	"social/cmd/gate"
-	"social/cmd/interaction"
-	"social/cmd/notification"
-	"social/cmd/recommendation"
-	xrlog "social/pkg/lib/log"
-	"social/pkg/server"
+	"path/filepath"
+	blogserver "social/internal/blog"
+	cleansingserver "social/internal/cleansing"
+	friendserver "social/internal/friend"
+	gateserver "social/internal/gate/server"
+	interactionserver "social/internal/interaction"
+	notificationserver "social/internal/notification"
+	recommendationserver "social/internal/recommendation"
+	robotserver "social/internal/robot"
+	pkgcommon "social/pkg/common"
+	liblog "social/pkg/lib/log"
+	pkgserver "social/pkg/server"
 	"strconv"
 )
 
 func main() {
+	normal := pkgserver.NewNormal()
 	args := os.Args
 	argNum := len(args)
 	if argNum != 4 { // program name, zoneID, serviceName, serverID
-		xrlog.PrintErr("args len err")
+		liblog.PrintErr("args len err")
 		return
 	}
+	pathName := filepath.ToSlash(args[0])
+	normal.ProgramPath = filepath.Dir(pathName)
+	normal.ProgramName = filepath.Base(pathName)
 	{
-		zoneID, err := strconv.ParseUint(args[1], 10, 32)
+		strZoneID, err := strconv.ParseUint(args[1], 10, 32)
 		if err != nil {
-			xrlog.PrintErr("zoneID err", err)
+			liblog.PrintErr("zoneID err", err)
 			return
 		}
-		server.GetInstance().ZoneID = uint32(zoneID)
+		normal.ZoneID = uint32(strZoneID)
 	}
-	server.GetInstance().ServiceName = args[2]
+	normal.ServiceName = args[2]
 	{
-		serviceID, err := strconv.ParseUint(args[3], 10, 32)
+		strServiceID, err := strconv.ParseUint(args[3], 10, 32)
 		if err != nil {
-			xrlog.PrintErr("serviceID err", err)
+			liblog.PrintErr("serviceID err", err)
 			return
 		}
-		server.GetInstance().ServiceID = uint32(serviceID)
+		normal.ServiceID = uint32(strServiceID)
 	}
-	xrlog.PrintInfo(server.GetInstance().ZoneID, server.GetInstance().ServiceName, server.GetInstance().ServiceID)
-	var s server.IServer
-	switch server.GetInstance().ServiceName {
-	case server.NameGate:
-		s = &gate.Server{}
-	case server.NameFriend:
-		s = &friend.Server{}
-	case server.NameInteraction:
-		s = &interaction.Server{}
-	case server.NameNotification:
-		s = &notification.Server{}
-	case server.NameBlog:
-		s = &blog.Server{}
-	case server.NameRecommendation:
-		s = &recommendation.Server{}
-	case server.NameCleansing:
-		s = &cleansing.Server{}
+	liblog.PrintInfo(normal.ZoneID, normal.ServiceName, normal.ServiceID)
+	var s pkgserver.IServer
+	switch normal.ServiceName {
+	case pkgserver.NameGate:
+		s = gateserver.NewServer(normal)
+	case pkgserver.NameFriend:
+		s = &friendserver.Server{Normal: normal}
+	case pkgserver.NameInteraction:
+		s = &interactionserver.Server{Normal: normal}
+	case pkgserver.NameNotification:
+		s = &notificationserver.Server{Normal: normal}
+	case pkgserver.NameBlog:
+		s = &blogserver.Server{Normal: normal}
+	case pkgserver.NameRecommendation:
+		s = &recommendationserver.Server{Normal: normal}
+	case pkgserver.NameCleansing:
+		s = &cleansingserver.Server{Normal: normal}
+	case pkgserver.NameRobot:
+		s = &robotserver.Server{Normal: normal}
 	default:
-		xrlog.PrintErr("service name err", server.GetInstance().ServiceName)
+		liblog.PrintErr("service name err", normal.ServiceName)
 		return
 	}
-	err := s.Start()
+	err := s.LoadBench(context.Background(), normal.Options)
 	if err != nil {
-		xrlog.PrintErr("service name err", server.GetInstance().ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 	}
-	err = s.Stop()
+	err = s.Init(context.Background(),
+		normal.Options, pkgserver.NewOptions().SetEtcdWatchServicePrefix(pkgcommon.EtcdGenerateWatchServicePrefix()).
+			SetEtcdWatchCommandPrefix(pkgcommon.EtcdGenerateWatchCommandPrefix(normal.ZoneID, normal.ServiceName)),
+	)
 	if err != nil {
-		xrlog.PrintErr("service name err", server.GetInstance().ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
+	}
+	err = s.Start(context.Background())
+	if err != nil {
+		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
+	}
+	err = s.Run(context.Background())
+	if err != nil {
+		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
+	}
+	err = s.PreStop(context.Background())
+	if err != nil {
+		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
+	}
+	err = s.Stop(context.Background())
+	if err != nil {
+		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
 	}
 	return
 }

@@ -48,6 +48,22 @@ windows
     
     运行 social/scripts/proto/gen.sh
 
+## etcd windows部署(单例)
+
+    下载文件
+    https://github.com/etcd-io/etcd/releases/tag/v3.5.10
+#
+    启动服务
+    解压运行 etcd.exe
+#
+    使用
+    增
+    ./etcdctl --endpoints=127.0.0.1:2379 put /test "Hello etcd"
+    查
+    ./etcdctl --endpoints=127.0.0.1:2379 get --prefix /
+    删
+    ./etcdctl --endpoints=1270.0.01:2379 del --prev-kv --prefix /
+
 # 目录说明
 
 ##
@@ -58,9 +74,10 @@ windows
 │       └── service.go   
 ├── bin         --二进制执行文件
 │   └── server
-|       └──log  --日志
+|       └──log  --日志目录
+|       └──bench.json.default  --服务配置(正式为bench.json)
 ├── cmd         --Main入口 
-│   └── server
+│   └── main  --程序入口
 ├── internal    --游戏服务业务逻辑 
 │   └──  server
 │        └── internal   --该目录下具体实现服务的各模块，内部可拆分子目录（如hero、skin等）
@@ -68,6 +85,7 @@ windows
 │            └── skin
 │            └── hero
 ├── pkg         --通用工具包
+│   ├── bench   --配置文件方法定义
 │   ├── common  --通用方法定义
 │   ├── consts  --常量定义
 │   ├── deps    --依赖封装
@@ -91,5 +109,7 @@ windows
 ├── tools       --项目工具
 └── vendor
 ```
+
+
 
 

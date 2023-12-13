@@ -1,59 +1,59 @@
 package server
 
 import (
-	xretcd "social/pkg/lib/etcd"
-	xrlog "social/pkg/lib/log"
-	xrtimer "social/pkg/lib/timer"
-	xrutil "social/pkg/lib/util"
+	libetcd "social/pkg/lib/etcd"
+	liblog "social/pkg/lib/log"
+	libtimer "social/pkg/lib/timer"
+	libutil "social/pkg/lib/util"
 	"time"
 )
 
 // HandleBus todo [重要] issue 在处理 event 时候, 向 eventChan 中插入 事件，注意超出eventChan的上限会阻塞.
-func (p *mgr) HandleBus() {
+func (p *Normal) HandleBus() {
 	// 在消费eventChan时可能会往eventChan中写入事件,所以关闭服务时不能close eventChan(造成写入阻塞),通过定时检查eventChan大小来关闭
 	for {
 		select {
-		case <-p.checkBusChan:
-			xrlog.GetInstance().Warn("receive GCheckBusChan")
-			if 0 == len(p.BusChannel) && p.IsStopping() {
-				xrlog.GetInstance().Warn("server is stopping, stop consume GEventChan with length 0")
+		case <-p.busCheckChan:
+			p.LogMgr.Warn("receive busCheckChan")
+			if 0 == len(p.busChannel) && p.IsStopping() {
+				p.LogMgr.Warn("server is stopping, stop consume EventChan with length 0")
 				return
 			} else {
-				xrlog.GetInstance().Warnf("server is stopping, waiting for consume GEventChan with length:%d", len(p.BusChannel))
+				p.LogMgr.Warnf("server is stopping, waiting for consume EventChan with length:%d", len(p.busChannel))
 			}
-		case v := <-p.BusChannel:
+		case v := <-p.busChannel:
 			//TODO [*] 应拿尽拿...
 			p.TimeMgr.Update()
 			var err error
 			switch t := v.(type) {
-			case *xrtimer.Second:
+			case *libtimer.Second:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
-			case *xrtimer.Millisecond:
+			case *libtimer.Millisecond:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
-			case *xretcd.KV:
-				err = xretcd.GetInstance().Handler(t.Key, t.Value)
+			case *libetcd.KV:
+				err = p.EtcdMgr.Handler(t.Key, t.Value)
 			default:
-				if p.Opt.DefaultHandler == nil {
-					xrlog.GetInstance().Fatalf("non-existent event:%v %v", v, t)
+				if p.Options.defaultHandler == nil {
+					p.LogMgr.Fatalf("non-existent event:%v %v", v, t)
 				} else {
-					err = p.Opt.DefaultHandler(v)
+					err = p.Options.defaultHandler(v)
 				}
 			}
 			if err != nil {
-				xrlog.PrintErr(v, err)
+				liblog.PrintErr(v, err)
 			}
-			if xrutil.IsDebug() {
+			if libutil.IsDebug() {
 				dt := time.Now().Sub(p.TimeMgr.Time).Milliseconds()
 				if dt > 50 {
-					xrlog.GetInstance().Warnf("cost time50: %v Millisecond with event type:%T", dt, v)
+					p.LogMgr.Warnf("cost time50: %v Millisecond with event type:%T", dt, v)
 				} else if dt > 20 {
-					xrlog.GetInstance().Warnf("cost time20: %v Millisecond with event type:%T", dt, v)
+					p.LogMgr.Warnf("cost time20: %v Millisecond with event type:%T", dt, v)
 				} else if dt > 10 {
-					xrlog.GetInstance().Warnf("cost time10: %v Millisecond with event type:%T", dt, v)
+					p.LogMgr.Warnf("cost time10: %v Millisecond with event type:%T", dt, v)
 				}
 			}
 		}

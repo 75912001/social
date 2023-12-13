@@ -13,7 +13,7 @@ import (
 	"social/pkg/proto/gate"
 )
 
-func (s *Server) BidirectionalBinaryData(stream gate.Service_BidirectionalBinaryDataServer) error {
+func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalBinaryDataServer) error {
 	for {
 		request, err := stream.Recv()
 		if err != nil {
@@ -55,7 +55,7 @@ func (s *Server) BidirectionalBinaryData(stream gate.Service_BidirectionalBinary
 		}
 		{ //获取数据-二进制
 			b := request.GetData()
-			stream.Send()
+
 			proto.Unmarshal(b, gate.)
 		}
 		//// 根据请求类型选择处理逻辑
