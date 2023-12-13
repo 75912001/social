@@ -24,6 +24,7 @@
     go get -v github.com/pkg/errors
     go get go.etcd.io/etcd/client/v3
     go get github.com/google/uuid
+    *go get github.com/agiledragon/gomonkey
 
 
 使用以下命令安装Go的协议编译器插件
