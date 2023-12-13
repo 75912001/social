@@ -6,8 +6,11 @@ import (
 	"time"
 )
 
+var now = time.Now().UTC()
+
 func NowTime() time.Time {
-	return time.Now().UTC()
+	return now
+	//return time.Now().UTC()
 }
 
 // GenYMD 获取 e.g.:20210819
