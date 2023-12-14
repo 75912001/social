@@ -1,6 +1,9 @@
 package etcd
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 var (
 	grantLeaseRetryDuration     = time.Second * 3 // 授权租约 重试 间隔时长
@@ -13,3 +16,23 @@ const (
 	WatchMsgTypeService string = "service"
 	WatchMsgTypeCommand string = "command"
 )
+
+// GenerateServiceKey 生成服务注册的key
+func GenerateServiceKey(projectName string, zoneID uint32, serviceName string, serviceID uint32) string {
+	return fmt.Sprintf("%v/%v/%v/%v/%v",
+		projectName, WatchMsgTypeService,
+		zoneID, serviceName, serviceID)
+}
+
+// GenerateWatchServicePrefix 生成关注服务的前缀
+func GenerateWatchServicePrefix(projectName string) string {
+	return fmt.Sprintf("%v/%v/",
+		projectName, WatchMsgTypeService)
+}
+
+// GenerateWatchCommandPrefix 生成关注命令的前缀
+func GenerateWatchCommandPrefix(projectName string, zoneID uint32, serviceName string) string {
+	return fmt.Sprintf("%v/%v/%v/%v/",
+		projectName, WatchMsgTypeCommand,
+		zoneID, serviceName)
+}

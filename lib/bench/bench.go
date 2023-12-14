@@ -6,14 +6,15 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"os"
+	"path"
 	"runtime"
+	libconsts "social/lib/consts"
 	liberror "social/lib/error"
 	libetcd "social/lib/etcd"
 	liblog "social/lib/log"
 	libruntime "social/lib/runtime"
+	libtimer "social/lib/timer"
 	libutil "social/lib/util"
-	pkgconsts "social/pkg/consts"
-	pkgetcd "social/pkg/etcd"
 	"sync"
 	"time"
 )
@@ -58,9 +59,9 @@ type Server struct {
 }
 
 type Timer struct {
-	//秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为100毫秒 default: pkgconsts.TimerScanSecondDurationDefault
+	//秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为100毫秒 default: pkgconsts.ScanSecondDurationDefault
 	ScanSecondDuration *time.Duration `json:"scanSecondDuration"`
-	//毫秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为25毫秒 default: pkgconsts.TimerScanMillisecondDurationDefault
+	//毫秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为25毫秒 default: pkgconsts.ScanMillisecondDurationDefault
 	ScanMillisecondDuration *time.Duration `json:"scanMillisecondDuration"`
 }
 
@@ -89,7 +90,7 @@ func (p *Mgr) String() string {
 }
 
 // Parse 解析, bench.json
-func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceID uint32) error {
+func (p *Mgr) Parse(pathFile string, projectName string, zoneID uint32, serviceName string, serviceID uint32) error {
 	if data, err := os.ReadFile(pathFile); err != nil {
 		return errors.WithMessagef(err, "%v %v", pathFile, libruntime.GetCodeLocation(1).String())
 	} else {
@@ -105,7 +106,7 @@ func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceI
 		p.Base.LogLevel = int(liblog.LevelOn)
 	}
 	if len(p.Base.LogAbsPath) == 0 {
-		p.Base.LogAbsPath = pkgconsts.LogAbsPath
+		p.Base.LogAbsPath = path.Join(liblog.LogAbsPathDefault + projectName)
 	}
 	if 0 == p.Base.GoMaxProcess {
 		p.Base.GoMaxProcess = runtime.NumCPU()
@@ -114,7 +115,7 @@ func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceI
 		p.Base.AvailableLoad = math.MaxUint32
 	}
 	if 0 == p.Base.BusChannelNumber {
-		p.Base.BusChannelNumber = pkgconsts.BusChannelNumberDefault
+		p.Base.BusChannelNumber = libconsts.BusChannelNumberDefault
 	}
 	libutil.GRunMode = p.Base.RunMode
 	//server
@@ -132,7 +133,7 @@ func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceI
 		p.Etcd.TTL = libetcd.TtlSecondDefault
 	}
 	if len(p.Etcd.Key) == 0 {
-		p.Etcd.Key = pkgetcd.GenerateServiceKey(zoneID, serviceName, serviceID)
+		p.Etcd.Key = libetcd.GenerateServiceKey(projectName, zoneID, serviceName, serviceID)
 	}
 	if len(p.Etcd.Value.ServiceNetTCP.IP) == 0 {
 		p.Etcd.Value.ServiceNetTCP.IP = p.Server.IP
@@ -148,11 +149,11 @@ func (p *Mgr) Parse(pathFile string, zoneID uint32, serviceName string, serviceI
 	}
 	//timer
 	if nil == p.Timer.ScanSecondDuration {
-		t := pkgconsts.TimerScanSecondDurationDefault
+		t := libtimer.ScanSecondDurationDefault
 		p.Timer.ScanSecondDuration = &t
 	}
 	if nil == p.Timer.ScanMillisecondDuration {
-		t := pkgconsts.TimerScanMillisecondDurationDefault
+		t := libtimer.ScanMillisecondDurationDefault
 		p.Timer.ScanMillisecondDuration = &t
 	}
 	return nil
