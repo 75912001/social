@@ -3,8 +3,9 @@ package subbench
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
-	xrerror "social/pkg/lib/error"
-	xrutil "social/pkg/lib/util"
+	"os"
+	liberror "social/lib/error"
+	libutil "social/lib/util"
 	"sync"
 )
 
@@ -30,16 +31,20 @@ type Gate struct {
 	Port uint16 `json:"port"`
 }
 
-func (p *mgr) Load(strJson string) error {
-	if err := json.Unmarshal([]byte(strJson), &p); err != nil {
-		return errors.WithMessagef(err, "%v %v", strJson, xrutil.GetCodeLocation(1).String())
+func (p *mgr) Load(pathFile string) error {
+	if data, err := os.ReadFile(pathFile); err != nil {
+		return errors.WithMessagef(err, "%v %v", pathFile, libutil.GetCodeLocation(1).String())
+	} else {
+		if err = json.Unmarshal(data, &p); err != nil {
+			return errors.WithMessagef(err, "%v %v", pathFile, libutil.GetCodeLocation(1).String())
+		}
 	}
 	//base
 	if len(p.Gate.IP) == 0 {
-		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Config, libutil.GetCodeLocation(1).String())
 	}
 	if 0 == p.Gate.Port {
-		return errors.WithMessage(xrerror.Config, xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Config, libutil.GetCodeLocation(1).String())
 	}
 	return nil
 }

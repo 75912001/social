@@ -1,6 +1,8 @@
 package handler
 
-import liblog "social/pkg/lib/log"
+import (
+	liblog "social/lib/log"
+)
 
 func OnEventDefault(v interface{}) error {
 	switch t := v.(type) {

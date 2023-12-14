@@ -3,19 +3,21 @@ package msg
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	libpb "social/pkg/lib/pb"
-	libutil "social/pkg/lib/util"
+	libutil "social/lib/util"
 )
 
-type Packet struct{}
+type Packet struct {
+	Header  Header
+	Message proto.Message // Marshal 时候使用
+}
 
 // Marshal 序列化 数据包
-func Marshal(unserializedPacket *libpb.UnserializedPacket) ([]byte, error) {
-	headerBuf := unserializedPacket.Header.Pack()
+func (p *Packet) Marshal() ([]byte, error) {
+	headerBuf := p.Header.Pack()
 
 	var messageBuf []byte
 	var err error
-	if messageBuf, err = proto.Marshal(unserializedPacket.Message); nil != err && proto.ErrNil != err {
+	if messageBuf, err = proto.Marshal(p.Message); nil != err && proto.ErrNil != err {
 		return nil, errors.WithMessagef(err, libutil.GetCodeLocation(1).String())
 	}
 
@@ -30,15 +32,9 @@ func Marshal(unserializedPacket *libpb.UnserializedPacket) ([]byte, error) {
 // Unmarshal 反序列化
 //
 //	data:完整包数据 包头+包体
-func Unmarshal(data []byte) (unserializedPacket *libpb.UnserializedPacket, err error) {
-	var msg proto.Message
-	if err = proto.Unmarshal(data[GProtoHeadLength:], msg); nil != err {
-		return nil, errors.WithMessagef(err, "%v data:%v", libutil.GetCodeLocation(1).String(), data)
-	}
-	unserializedPacket = &libpb.UnserializedPacket{
-		Header:  &Header{},
-		Message: msg,
-	}
-	unserializedPacket.Header.Unpack(data)
-	return unserializedPacket, nil
+func (p *Packet) Unmarshal(data []byte) (err error) {
+	p.Header.Unpack(data)
+	//err = proto.Unmarshal(data[GProtoHeadLength:], p.Message)
+
+	return nil
 }

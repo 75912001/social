@@ -5,19 +5,24 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
-	"log"
-	"social/pkg/common"
-	xrerror "social/pkg/lib/error"
-	xrutil "social/pkg/lib/util"
-	"social/pkg/proto/gate"
+	gaterouter "social/internal/gate/router"
+	liberror "social/lib/error"
+	liblog "social/lib/log"
+	libutil "social/lib/util"
+	pkggrpcstream "social/pkg/grpcstream"
+	pkgmsg "social/pkg/msg"
+	pkgproto "social/pkg/proto"
+	protogate "social/pkg/proto/gate"
 )
 
-func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalBinaryDataServer) error {
+func (s *Server) BidirectionalBinaryData(stream protogate.Service_BidirectionalBinaryDataServer) error {
+	defer func() {
+
+	}()
 	for {
 		request, err := stream.Recv()
 		if err != nil {
-			log.Fatalln(err, xrerror.Link, stream, xrutil.GetCodeLocation(1))
+			liblog.GetInstance().Fatal(err, liberror.Link, stream, libutil.GetCodeLocation(1))
 			// 使用 status.FromError 函数获取 gRPC 状态
 			st, ok := status.FromError(err)
 			if ok {
@@ -25,7 +30,7 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalB
 				code := st.Code()
 				// 获取错误消息
 				message := st.Message()
-				log.Fatalln(code, message, xrutil.GetCodeLocation(1))
+				liblog.GetInstance().Fatal(code, message, libutil.GetCodeLocation(1))
 
 				// 根据错误代码采取不同的处理方式
 				switch code {
@@ -44,86 +49,114 @@ func (s *Server) BidirectionalStreamingMethod(stream gate.Service_BidirectionalB
 				}
 				// 在处理不同类型的错误后，可以根据需要进行其他操作
 			} else {
-				log.Fatalln(st, ok, stream, xrutil.GetCodeLocation(1))
+				liblog.GetInstance().Fatal(st, ok, stream, libutil.GetCodeLocation(1))
 			}
-			e := common.GetGrpcStreamMgrInstance().Del(stream)
-			if e != nil {
-				log.Fatalln(err, e, xrutil.GetCodeLocation(1))
-				return errors.WithMessage(err, e.Error())
+			err2 := pkggrpcstream.GetInstance().Del(stream)
+			if err2 != nil {
+				liblog.GetInstance().Fatal(err, err2, libutil.GetCodeLocation(1))
+				return errors.WithMessage(err, err2.Error())
 			}
 			return err
 		}
-		{ //获取数据-二进制
-			b := request.GetData()
-
-			proto.Unmarshal(b, gate.)
+		//获取数据-二进制
+		if uint32(len(request.GetData())) < pkgmsg.GProtoHeadLength {
+			//todo menglingchao 消息长度不足,断开链接 grpc
+			return errors.WithMessage(liberror.Packet, libutil.GetCodeLocation(1).String())
 		}
-		//// 根据请求类型选择处理逻辑
-		//switch req := request.GetData().(type) {
-		//case *gate.Request_RegisterReq:
-		//	log.Println("Received Request_RegisterReq:", req.RegisterReq.GetServiceKey())
-		//	// 处理 RegisterReq 并生成响应
-		//	res := &gate.Response{
-		//		Response: &gate.Response_RegisterRes{
-		//			RegisterRes: &gate.RegisterRes{},
-		//		},
-		//	}
-		//	err = common.GetGrpcStreamMgrInstance().Add(req.RegisterReq.GetServiceKey().GetServiceID(), stream)
-		//	if err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//	if err = stream.Send(res); err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//case *gate.Request_LogoutReq:
-		//	log.Println("Received Request_LogoutReq:", req.LogoutReq.GetServiceKey())
-		//	// 处理 RequestTypeB 并生成响应
-		//	response := &gate.Response{
-		//		Response: &gate.Response_LogoutRes{
-		//			LogoutRes: &gate.LogoutRes{},
-		//		},
-		//	}
-		//	//删除client
-		//	err = common.GetGrpcStreamMgrInstance().Del(stream)
-		//	if err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//	if err = stream.Send(response); err != nil {
-		//		log.Fatalln(err, stream, xrutil.GetCodeLocation(1))
-		//		return err
-		//	}
-		//default:
-		//
-		//	log.Fatalln(xrerror.MessageIDNonExistent, xrutil.GetCodeLocation(1))
-		//	return nil
-		//}
+		header := &pkgmsg.Header{}
+		header.Unpack(request.GetData())
+		liblog.GetInstance().Trace(header.String())
+		//todo menglingchao 按照CMD来 处理/分发 数据包...
+		//return xxx
+		err = gaterouter.GetInstance().Handle(header, request.GetData())
+		if err != nil {
+			liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+			return err
+		}
+
+		err = handle(stream, request.GetData())
+		if err != nil {
+			liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+			return err
+		}
 	}
+	return nil
 }
 
-func (s *Server) ForwardBinaryData(stream gate.Service_ForwardBinaryDataServer) error {
-	for {
-		data, err := stream.Recv()
-		if err == io.EOF {
-			// 客户端关闭流，结束循环
-			return nil
-		}
-		if err != nil {
-			log.Printf("Error receiving data: %v", err)
-			return err
-		}
-
-		// 在这里可以根据需要处理接收到的二进制数据
-		// 在本示例中，我们将接收到的数据直接打印出来
-		log.Printf("Received binary data: %v", data.Data)
-
-		// 在这里可以根据需要处理数据，然后将数据发送回客户端
-		// 在本示例中，我们将接收到的数据原样发送回客户端
-		if err := stream.Send(data); err != nil {
-			log.Printf("Error sending data: %v", err)
-			return err
-		}
+func handle(stream protogate.Service_BidirectionalBinaryDataServer, data []byte) error {
+	packet := pkgmsg.Packet{}
+	err := packet.Unmarshal(data)
+	if err != nil {
+		liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+		return err
 	}
+	liblog.GetInstance().Trace(packet.Header, packet.Message)
+
+	//switch m := packet.Message.(type) {
+	//case *protogate.RegisterReq:
+	//	fmt.Println("", m.ServiceKey)
+	//case *protogate.LogoutReq:
+	//	fmt.Println("")
+	//default:
+	//	// 处理未知类型或其他情况
+	//	fmt.Println("")
+	//}
+	switch packet.Header.MessageID {
+	case protogate.RegisterReq_CMD:
+		//var req pkgproto.ServiceKey //
+		var req protogate.RegisterReq
+		err := proto.Unmarshal(data[pkgmsg.GProtoHeadLength:], &req)
+		liblog.GetInstance().Trace("Received RegisterReq:", req.String(), stream)
+		// 处理 RegisterReq
+		//err = pkggrpcstream.GetInstance().Add(req.GetServiceKey().GetServiceID(), stream)
+		if err != nil {
+			liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+			return err
+		}
+		//组包
+		resPacket := pkgmsg.Packet{
+			Header: pkgmsg.Header{
+				MessageID: protogate.RegisterRes_CMD,
+				ResultID:  0,
+			},
+			Message: &protogate.RegisterRes{},
+		}
+		sendData := pkgproto.BinaryData{}
+		sendData.Data, err = resPacket.Marshal()
+		//回包
+		if err = stream.Send(&sendData); err != nil {
+			liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+			return err
+		}
+	case protogate.LogoutReq_CMD:
+		var req protogate.LogoutReq
+		err := proto.Unmarshal(data[pkgmsg.GProtoHeadLength:], &req)
+		liblog.GetInstance().Trace("Received LogoutReq:", req.String(), stream)
+		// 处理 LogoutReq
+		//删除client
+		err = pkggrpcstream.GetInstance().Del(stream)
+		if err != nil {
+			liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+			return err
+		}
+		//组包
+		resPacket := pkgmsg.Packet{
+			Header: pkgmsg.Header{
+				MessageID: protogate.LogoutRes_CMD,
+				ResultID:  0,
+			},
+			Message: &protogate.LogoutRes{},
+		}
+		sendData := pkgproto.BinaryData{}
+		sendData.Data, err = resPacket.Marshal()
+		//回包
+		if err = stream.Send(&sendData); err != nil {
+			liblog.GetInstance().Fatal(err, libutil.GetCodeLocation(1))
+			return err
+		}
+	default:
+		liblog.GetInstance().Fatal(liberror.MessageIDNonExistent, libutil.GetCodeLocation(1))
+		return liberror.MessageIDNonExistent
+	}
+	return nil
 }

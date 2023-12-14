@@ -1,11 +1,11 @@
 package handler
 
 import (
+	libconstant "social/lib/consts"
+	liblog "social/lib/log"
+	libutil "social/lib/util"
 	pkgcommon "social/pkg/common"
 	pkgetcd "social/pkg/etcd"
-	libconstant "social/pkg/lib/constant"
-	liblog "social/pkg/lib/log"
-	libutil "social/pkg/lib/util"
 	pkgserver "social/pkg/server"
 	"strconv"
 )

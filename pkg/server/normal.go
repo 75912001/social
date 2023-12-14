@@ -10,17 +10,17 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/debug"
+	libconstant "social/lib/consts"
+	liberror "social/lib/error"
+	libetcd "social/lib/etcd"
+	"social/lib/log"
+	libpprof "social/lib/pprof"
+	libtime "social/lib/time"
+	"social/lib/timer"
+	libutil "social/lib/util"
 	pkgbench "social/pkg/bench"
 	pkgec "social/pkg/ec"
 	pkgetcd "social/pkg/etcd"
-	libconstant "social/pkg/lib/constant"
-	liberror "social/pkg/lib/error"
-	libetcd "social/pkg/lib/etcd"
-	liblog "social/pkg/lib/log"
-	libpprof "social/pkg/lib/pprof"
-	libtime "social/pkg/lib/time"
-	libtimer "social/pkg/lib/timer"
-	libutil "social/pkg/lib/util"
 	"sync"
 	"syscall"
 	"time"
@@ -46,8 +46,8 @@ func NewNormal() *Normal {
 
 	normal.BenchMgr = pkgbench.GetInstance()
 	normal.TimeMgr = libtime.GetInstance()
-	normal.TimerMgr = libtimer.GetInstance()
-	normal.LogMgr = liblog.GetInstance()
+	normal.TimerMgr = timer.GetInstance()
+	normal.LogMgr = log.GetInstance()
 	normal.EtcdMgr = libetcd.GetInstance()
 
 	return normal
@@ -63,8 +63,8 @@ type Normal struct {
 
 	BenchMgr *pkgbench.Mgr
 	TimeMgr  *libtime.Mgr
-	TimerMgr *libtimer.Mgr
-	LogMgr   *liblog.Mgr
+	TimerMgr *timer.Mgr
+	LogMgr   *log.Mgr
 	EtcdMgr  *libetcd.Mgr
 
 	busChannel          chan interface{} //总线 channel
@@ -99,7 +99,7 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	p.busCheckChan = make(chan struct{}, 1)
 	p.exitChan = make(chan struct{}, 1)
 
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(libtime.NowTime().UnixNano())
 	p.TimeMgr.Update()
 	// 小端
 	if !libutil.IsLittleEndian() {
@@ -118,14 +118,14 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	}
 	//GoMaxProcess
 	previous := runtime.GOMAXPROCS(p.BenchMgr.Base.GoMaxProcess)
-	liblog.PrintfInfo("go max process new:%v, previous setting:%v",
+	log.PrintfInfo("go max process new:%v, previous setting:%v",
 		p.BenchMgr.Base.GoMaxProcess, previous)
 	// log
 	err = p.LogMgr.Start(ctx,
-		liblog.NewOptions().
-			SetLevel(liblog.Level(p.BenchMgr.Base.LogLevel)).
-			SetAbsPath(p.BenchMgr.Base.LogAbsPath).
-			SetNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
+		log.NewOptions().
+			WithLevel(log.Level(p.BenchMgr.Base.LogLevel)).
+			WithAbsPath(p.BenchMgr.Base.LogAbsPath).
+			WithNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
 	)
 	if err != nil {
 		return errors.Errorf("log Start err:%v %v ", err, libutil.GetCodeLocation(1).String())
@@ -149,7 +149,7 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	}
 	// 全局定时器
 	err = p.TimerMgr.Start(ctx,
-		libtimer.NewOptions().
+		timer.NewOptions().
 			SetScanSecondDuration(p.BenchMgr.Timer.ScanSecondDuration).
 			SetScanMillisecondDuration(p.BenchMgr.Timer.ScanMillisecondDuration).
 			SetOutgoingTimerOutChan(p.busChannel),
@@ -162,17 +162,7 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	if err != nil {
 		return errors.Errorf("Etcd start err:%v %v", err, libutil.GetCodeLocation(1).String())
 	}
-	// etcd 关注 服务 首次启动服务需要拉取一次
-	if err = p.EtcdMgr.WatchPrefixSendIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
-		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
-	}
-	if err = p.EtcdMgr.GetPrefixSendIntoChan(*p.Options.etcdWatchServicePrefix); err != nil {
-		return errors.Errorf("EtcdGetPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
-	}
-	// etcd 关注 命令
-	if err = p.EtcdMgr.WatchPrefixSendIntoChan(*p.Options.etcdWatchCommandPrefix); err != nil {
-		return errors.Errorf("EtcdWatchPrefix err:%v %v", err, libutil.GetCodeLocation(1).String())
-	}
+
 	p.serviceInformationPrintingStart()
 	runtime.GC()
 
@@ -232,7 +222,7 @@ func (p *Normal) Stop(ctx context.Context) error {
 		p.LogMgr.Warn("server Etcd stop")
 	}
 
-	liblog.PrintErr("server Log stop")
+	log.PrintErr("server Log stop")
 	_ = p.LogMgr.Stop()
 	return nil
 }

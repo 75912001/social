@@ -3,49 +3,49 @@ package handler
 import (
 	"encoding/json"
 	"social/internal/gate/load"
+	libetcd "social/lib/etcd"
+	liblog "social/lib/log"
+	libutil "social/lib/time"
+	"social/lib/timer"
 	"social/pkg/bench"
-	xretcd "social/pkg/lib/etcd"
-	xrlog "social/pkg/lib/log"
-	xrtimer "social/pkg/lib/timer"
-	xrutil "social/pkg/lib/util"
 	"social/pkg/server"
 )
 
 type ServerTimer struct {
-	newDay   *xrtimer.Second
-	each5min *xrtimer.Second
+	newDay   *timer.Second
+	each5min *timer.Second
 }
 
 func (p *ServerTimer) Start() {
-	newDayBeginSec := xrutil.DayBeginSec(&server.GetInstance().TimeMgr.Time) + xrutil.OneDaySecond
-	p.newDay = xrtimer.GetInstance().AddSecond(newDayTimeOut, p, newDayBeginSec)
-	p.each5min = xrtimer.GetInstance().AddSecond(each5minTimeOut, p, server.GetInstance().TimeMgr.Second+xrutil.OneMinuteSecond*5)
+	newDayBeginSec := libutil.DayBeginSec(&server.GetInstance().TimeMgr.Time) + libutil.OneDaySecond
+	p.newDay = timer.GetInstance().AddSecond(newDayTimeOut, p, newDayBeginSec)
+	p.each5min = timer.GetInstance().AddSecond(each5minTimeOut, p, server.GetInstance().TimeMgr.Second+libutil.OneMinuteSecond*5)
 }
 
 func (p *ServerTimer) Stop() {
-	xrtimer.DelSecond(p.newDay)
-	xrtimer.DelSecond(p.each5min)
+	timer.DelSecond(p.newDay)
+	timer.DelSecond(p.each5min)
 }
 
 // 新的一天
 func newDayTimeOut(arg interface{}) {
 	p := arg.(*ServerTimer)
-	newDayBeginSec := xrutil.DayBeginSec(&server.GetInstance().TimeMgr.Time) + xrutil.OneDaySecond
-	p.newDay = xrtimer.GetInstance().AddSecond(newDayTimeOut, p, newDayBeginSec)
+	newDayBeginSec := libutil.DayBeginSec(&server.GetInstance().TimeMgr.Time) + libutil.OneDaySecond
+	p.newDay = timer.GetInstance().AddSecond(newDayTimeOut, p, newDayBeginSec)
 	//do...
 }
 
 // 每5分钟
 func each5minTimeOut(arg interface{}) {
 	p := arg.(*ServerTimer)
-	p.each5min = xrtimer.GetInstance().AddSecond(each5minTimeOut, p, server.GetInstance().TimeMgr.Second+xrutil.OneMinuteSecond*5)
+	p.each5min = timer.GetInstance().AddSecond(each5minTimeOut, p, server.GetInstance().TimeMgr.Second+libutil.OneMinuteSecond*5)
 	{ //更新load
 		bench.GetInstance().Etcd.Value.AvailableLoad = load.AvailableLoad()
 		v, err := json.Marshal(bench.GetInstance().Etcd.Value)
 		if err != nil {
-			xrlog.GetInstance().Warnf("OnEventEtcd value json Marshal err:%v", err)
+			liblog.GetInstance().Warnf("OnEventEtcd value json Marshal err:%v", err)
 			return
 		}
-		_, _ = xretcd.GetInstance().PutWithLease(bench.GetInstance().Etcd.Key, string(v))
+		_, _ = libetcd.GetInstance().PutWithLease(bench.GetInstance().Etcd.Key, string(v))
 	}
 }

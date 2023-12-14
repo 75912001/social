@@ -11,9 +11,9 @@ import (
 	interactionserver "social/internal/interaction"
 	notificationserver "social/internal/notification"
 	recommendationserver "social/internal/recommendation"
-	robotserver "social/internal/robot"
+	robotserver "social/internal/robot/server"
+	"social/lib/log"
 	pkgcommon "social/pkg/common"
-	liblog "social/pkg/lib/log"
 	pkgserver "social/pkg/server"
 	"strconv"
 )
@@ -23,7 +23,7 @@ func main() {
 	args := os.Args
 	argNum := len(args)
 	if argNum != 4 { // program name, zoneID, serviceName, serverID
-		liblog.PrintErr("args len err")
+		log.PrintErr("args len err")
 		return
 	}
 	pathName := filepath.ToSlash(args[0])
@@ -32,7 +32,7 @@ func main() {
 	{
 		strZoneID, err := strconv.ParseUint(args[1], 10, 32)
 		if err != nil {
-			liblog.PrintErr("zoneID err", err)
+			log.PrintErr("zoneID err", err)
 			return
 		}
 		normal.ZoneID = uint32(strZoneID)
@@ -41,12 +41,12 @@ func main() {
 	{
 		strServiceID, err := strconv.ParseUint(args[3], 10, 32)
 		if err != nil {
-			liblog.PrintErr("serviceID err", err)
+			log.PrintErr("serviceID err", err)
 			return
 		}
 		normal.ServiceID = uint32(strServiceID)
 	}
-	liblog.PrintInfo(normal.ZoneID, normal.ServiceName, normal.ServiceID)
+	log.PrintInfo(normal.ZoneID, normal.ServiceName, normal.ServiceID)
 	var s pkgserver.IServer
 	switch normal.ServiceName {
 	case pkgserver.NameGate:
@@ -64,41 +64,41 @@ func main() {
 	case pkgserver.NameCleansing:
 		s = &cleansingserver.Server{Normal: normal}
 	case pkgserver.NameRobot:
-		s = &robotserver.Server{Normal: normal}
+		s = robotserver.NewServer(normal)
 	default:
-		liblog.PrintErr("service name err", normal.ServiceName)
+		log.PrintErr("service name err", normal.ServiceName)
 		return
 	}
 	err := s.LoadBench(context.Background(), normal.Options)
 	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
+		log.PrintErr("service name err", normal.ServiceName, err)
 	}
 	err = s.Init(context.Background(),
 		normal.Options, pkgserver.NewOptions().SetEtcdWatchServicePrefix(pkgcommon.EtcdGenerateWatchServicePrefix()).
 			SetEtcdWatchCommandPrefix(pkgcommon.EtcdGenerateWatchCommandPrefix(normal.ZoneID, normal.ServiceName)),
 	)
 	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
+		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.Start(context.Background())
 	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
+		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.Run(context.Background())
 	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
+		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.PreStop(context.Background())
 	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
+		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.Stop(context.Background())
 	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
+		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	return
