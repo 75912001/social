@@ -41,3 +41,16 @@ func (p *Normal) Info() string {
 	return fmt.Sprintf("[goroutines-number:%v gc:%d last GC at:%v PauseTotal:%v MemStats:%+v]",
 		runtime.NumGoroutine(), s.NumGC, s.LastGC, s.PauseTotal, memStats)
 }
+
+func (p *Normal) serviceInformationPrintingStart() {
+	p.TimerMgr.AddSecond(p.serviceInformationPrinting, nil, p.TimeMgr.TimeSecond()+InfoTimeOutSec)
+}
+
+// 服务信息 打印
+func (p *Normal) serviceInformationPrinting(_ interface{}) {
+	s := debug.GCStats{}
+	debug.ReadGCStats(&s)
+	p.LogMgr.Infof("goroutineCnt:%d, busChannel:%d, numGC:%d, lastGC:%v, GCPauseTotal:%v",
+		runtime.NumGoroutine(), len(p.busChannel), s.NumGC, s.LastGC, s.PauseTotal)
+	p.serviceInformationPrintingStart()
+}
