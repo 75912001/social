@@ -2,25 +2,26 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"math/rand"
 	"os"
 	"os/signal"
+	"path"
 	"runtime"
-	"runtime/debug"
-	libconstant "social/lib/consts"
+	libbench "social/lib/bench"
+	libconsts "social/lib/consts"
 	liberror "social/lib/error"
 	libetcd "social/lib/etcd"
-	"social/lib/log"
+	liblog "social/lib/log"
 	libpprof "social/lib/pprof"
+	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
-	"social/lib/timer"
+	libtimer "social/lib/timer"
 	libutil "social/lib/util"
-	pkgbench "social/pkg/bench"
-	pkgec "social/pkg/ec"
-	pkgetcd "social/pkg/etcd"
+	pkgconsts "social/pkg/consts"
 	"sync"
 	"syscall"
 	"time"
@@ -42,29 +43,29 @@ func GetInstance() *Normal {
 func NewNormal() *Normal {
 	normal := new(Normal)
 
-	normal.Options = &options{}
+	normal.Options = &Options{}
 
-	normal.BenchMgr = pkgbench.GetInstance()
+	normal.BenchMgr = libbench.GetInstance()
 	normal.TimeMgr = libtime.GetInstance()
-	normal.TimerMgr = timer.GetInstance()
-	normal.LogMgr = log.GetInstance()
-	normal.EtcdMgr = libetcd.GetInstance()
+	normal.TimerMgr = libtimer.GetInstance()
+	normal.LogMgr = liblog.GetInstance()
+	normal.EtcdMgr = &libetcd.Mgr{}
 
 	return normal
 }
 
 type Normal struct {
-	Options     *options
+	Options     *Options
 	ProgramPath string // 程序路径
 	ProgramName string // 程序名称
 	ZoneID      uint32 // 区域ID
 	ServiceName string // 服务
 	ServiceID   uint32 // 服务ID
 
-	BenchMgr *pkgbench.Mgr
+	BenchMgr *libbench.Mgr
 	TimeMgr  *libtime.Mgr
-	TimerMgr *timer.Mgr
-	LogMgr   *log.Mgr
+	TimerMgr *libtimer.Mgr
+	LogMgr   *liblog.Mgr
 	EtcdMgr  *libetcd.Mgr
 
 	busChannel          chan interface{} //总线 channel
@@ -74,69 +75,65 @@ type Normal struct {
 	exitChan            chan struct{}
 }
 
-func (p *Normal) LoadBench(ctx context.Context, opts ...*options) error {
+func (p *Normal) OnLoadBench(_ context.Context, opts ...*Options) error {
 	p.Options = mergeOptions(opts...)
 	err := configure(p.Options)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	// 加载配置文件 bench.json 公共部分
-	err = p.BenchMgr.Parse(*p.Options.benchPath, p.ZoneID, p.ServiceName, p.ServiceID)
+	benchPath := path.Join(p.ProgramPath, "bench.json")
+	err = p.BenchMgr.Parse(benchPath, pkgconsts.ProjectName, p.ZoneID, p.ServiceName, p.ServiceID)
 	if err != nil {
-		return errors.Errorf("Bench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
+		return errors.Errorf("Bench Load err:%v %v", err, libruntime.GetCodeLocation(1).String())
 	}
-	// 加载配置文件 bench.json 私有部分
 	if p.Options.subBench != nil {
-		err = p.Options.subBench.Load(*p.Options.benchPath)
+		// 加载配置文件 bench.json 私有部分
+		subbenchPath := path.Join(p.ProgramPath, "bench.json")
+		err = p.Options.subBench.Parse(subbenchPath)
 		if err != nil {
-			return errors.Errorf("SubBench Load err:%v %v", err, libutil.GetCodeLocation(1).String())
+			return errors.Errorf("SubBench Load err:%v %v", err, libruntime.GetCodeLocation(1).String())
 		}
 	}
 	return nil
 }
 
-func (p *Normal) Init(ctx context.Context, opts ...*options) error {
-	p.busCheckChan = make(chan struct{}, 1)
-	p.exitChan = make(chan struct{}, 1)
-
+func (p *Normal) OnInit(ctx context.Context, opts ...*Options) error {
 	rand.Seed(libtime.NowTime().UnixNano())
 	p.TimeMgr.Update()
 	// 小端
 	if !libutil.IsLittleEndian() {
-		return errors.Errorf("system is bigEndian! %v", libutil.GetCodeLocation(1).String())
+		return errors.Errorf("system is bigEndian! %v", libruntime.GetCodeLocation(1).String())
 	}
 	// 开启UUID随机
 	uuid.EnableRandPool()
-	// 初始化 错误码
-	if err := pkgec.Init(); err != nil {
-		return errors.Errorf("ec Start err:%v %v", err, libutil.GetCodeLocation(1).String())
-	}
+
 	p.Options = mergeOptions(opts...)
 	err := configure(p.Options)
 	if err != nil {
-		return errors.WithMessage(err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}
 	//GoMaxProcess
 	previous := runtime.GOMAXPROCS(p.BenchMgr.Base.GoMaxProcess)
-	log.PrintfInfo("go max process new:%v, previous setting:%v",
-		p.BenchMgr.Base.GoMaxProcess, previous)
+	liblog.PrintfInfo("go max process new:%v, previous setting:%v", p.BenchMgr.Base.GoMaxProcess, previous)
 	// log
 	err = p.LogMgr.Start(ctx,
-		log.NewOptions().
-			WithLevel(log.Level(p.BenchMgr.Base.LogLevel)).
+		liblog.NewOptions().
+			WithLevel(liblog.Level(p.BenchMgr.Base.LogLevel)).
 			WithAbsPath(p.BenchMgr.Base.LogAbsPath).
 			WithNamePrefix(fmt.Sprintf("%v-%v-%v", p.ZoneID, p.ServiceName, p.ServiceID)),
 	)
 	if err != nil {
-		return errors.Errorf("log Start err:%v %v ", err, libutil.GetCodeLocation(1).String())
+		return errors.Errorf("log OnStart err:%v %v ", err, libruntime.GetCodeLocation(1).String())
 	}
 
-	// eventChan
+	p.busCheckChan = make(chan struct{}, 1)
+	p.exitChan = make(chan struct{}, 1)
 	p.busChannel = make(chan interface{}, p.BenchMgr.Base.BusChannelNumber)
 	go func() {
 		defer func() {
 			// 主事件channel报错 不recover
-			p.LogMgr.Fatalf(libconstant.GoroutineDone)
+			p.LogMgr.Fatalf(libconsts.GoroutineDone)
 		}()
 		p.busChannelWaitGroup.Add(1)
 		defer p.busChannelWaitGroup.Done()
@@ -149,18 +146,42 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	}
 	// 全局定时器
 	err = p.TimerMgr.Start(ctx,
-		timer.NewOptions().
-			SetScanSecondDuration(p.BenchMgr.Timer.ScanSecondDuration).
-			SetScanMillisecondDuration(p.BenchMgr.Timer.ScanMillisecondDuration).
-			SetOutgoingTimerOutChan(p.busChannel),
+		libtimer.NewOptions().
+			WithScanSecondDuration(p.BenchMgr.Timer.ScanSecondDuration).
+			WithScanMillisecondDuration(p.BenchMgr.Timer.ScanMillisecondDuration).
+			WithOutgoingTimerOutChan(p.busChannel),
 	)
 	if err != nil {
-		return errors.Errorf("timer Start err:%v %v ", err, libutil.GetCodeLocation(1).String())
+		return errors.Errorf("timer OnStart err:%v %v ", err, libruntime.GetCodeLocation(1).String())
 	}
 	// 启动Etcd
-	err = pkgetcd.Start(&p.BenchMgr.Etcd, p.busChannel, p.Options.etcdHandler)
+	etcdValue, err := json.Marshal(p.BenchMgr.Etcd.Value)
 	if err != nil {
-		return errors.Errorf("Etcd start err:%v %v", err, libutil.GetCodeLocation(1).String())
+		return errors.WithMessagef(err, libruntime.Location())
+	}
+	kvSlice := []libetcd.KV{
+		{
+			Key:   p.BenchMgr.Etcd.Key,
+			Value: string(etcdValue),
+		},
+	}
+	err = p.EtcdMgr.Start(context.TODO(),
+		libetcd.NewOptions().
+			WithAddrs(p.BenchMgr.Etcd.Addrs).
+			WithTTL(p.BenchMgr.Etcd.TTL).
+			WithKV(kvSlice).
+			WithOnFunc(p.Options.etcdHandler).
+			WithOutgoingEventChan(p.busChannel).
+			WithWatchServicePrefix(libetcd.GenerateWatchServicePrefix(pkgconsts.ProjectName)).
+			WithWatchCommandPrefix(libetcd.GenerateWatchCommandPrefix(pkgconsts.ProjectName, p.ZoneID, p.ServiceName)),
+	)
+	if err != nil {
+		return errors.WithMessagef(err, libruntime.Location())
+	}
+	// 续租
+	err = p.EtcdMgr.Run(context.TODO())
+	if err != nil {
+		return errors.WithMessagef(err, libruntime.Location())
 	}
 
 	p.serviceInformationPrintingStart()
@@ -169,11 +190,11 @@ func (p *Normal) Init(ctx context.Context, opts ...*options) error {
 	return nil
 }
 
-func (p *Normal) Start(ctx context.Context) error {
+func (p *Normal) OnStart(_ context.Context) error {
 	return liberror.NotImplemented
 }
 
-func (p *Normal) Run(ctx context.Context) error {
+func (p *Normal) OnRun(_ context.Context) error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 	select {
@@ -185,11 +206,11 @@ func (p *Normal) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *Normal) PreStop(ctx context.Context) error {
+func (p *Normal) OnPreStop(_ context.Context) error {
 	return liberror.NotImplemented
 }
 
-func (p *Normal) Stop(ctx context.Context) error {
+func (p *Normal) OnStop(_ context.Context) error {
 	// 设置为关闭中
 	p.SetStopping()
 
@@ -217,13 +238,11 @@ func (p *Normal) Stop(ctx context.Context) error {
 	p.TimerMgr.Stop()
 	p.LogMgr.Warn("server Timer stop")
 
-	if libetcd.IsEnable() {
-		_ = p.EtcdMgr.Stop()
-		p.LogMgr.Warn("server Etcd stop")
-	}
+	err := p.EtcdMgr.Stop()
+	p.LogMgr.Warn(err, "server Etcd stop")
 
-	log.PrintErr("server Log stop")
-	_ = p.LogMgr.Stop()
+	err = p.LogMgr.Stop()
+	liblog.PrintInfo(err, "server Log stop")
 	return nil
 }
 
@@ -231,17 +250,4 @@ func (p *Normal) Stop(ctx context.Context) error {
 func (p *Normal) Exit() {
 	p.LogMgr.Warn("server Exit")
 	p.exitChan <- struct{}{}
-}
-
-func (p *Normal) serviceInformationPrintingStart() {
-	p.TimerMgr.AddSecond(p.serviceInformationPrinting, nil, p.TimeMgr.ShadowTimeSecond()+ServiceInfoTimeOutSec)
-}
-
-// 服务信息 打印
-func (p *Normal) serviceInformationPrinting(_ interface{}) {
-	s := debug.GCStats{}
-	debug.ReadGCStats(&s)
-	p.LogMgr.Infof("goroutineCnt:%d, busChannel:%d, numGC:%d, lastGC:%v, GCPauseTotal:%v",
-		runtime.NumGoroutine(), len(p.busChannel), s.NumGC, s.LastGC, s.PauseTotal)
-	p.serviceInformationPrintingStart()
 }
