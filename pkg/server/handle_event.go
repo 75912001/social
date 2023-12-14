@@ -1,11 +1,11 @@
 package server
 
 import (
-	libetcd "social/pkg/lib/etcd"
-	liblog "social/pkg/lib/log"
-	libtimer "social/pkg/lib/timer"
-	libutil "social/pkg/lib/util"
-	"time"
+	libetcd "social/lib/etcd"
+	liblog "social/lib/log"
+	libtime "social/lib/time"
+	"social/lib/timer"
+	libutil "social/lib/util"
 )
 
 // HandleBus todo [重要] issue 在处理 event 时候, 向 eventChan 中插入 事件，注意超出eventChan的上限会阻塞.
@@ -26,11 +26,11 @@ func (p *Normal) HandleBus() {
 			p.TimeMgr.Update()
 			var err error
 			switch t := v.(type) {
-			case *libtimer.Second:
+			case *timer.Second:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
-			case *libtimer.Millisecond:
+			case *timer.Millisecond:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
@@ -47,7 +47,7 @@ func (p *Normal) HandleBus() {
 				liblog.PrintErr(v, err)
 			}
 			if libutil.IsDebug() {
-				dt := time.Now().Sub(p.TimeMgr.Time).Milliseconds()
+				dt := libtime.NowTime().Sub(p.TimeMgr.Time).Milliseconds()
 				if dt > 50 {
 					p.LogMgr.Warnf("cost time50: %v Millisecond with event type:%T", dt, v)
 				} else if dt > 20 {

@@ -9,5 +9,7 @@ var (
 )
 
 const (
-	TtlSecondDefault int64 = 33 //默认TTL时间 秒
+	TtlSecondDefault    int64  = 33 //默认TTL时间 秒
+	WatchMsgTypeService string = "service"
+	WatchMsgTypeCommand string = "command"
 )

@@ -97,6 +97,7 @@ windows
 │        └── message.proto  --服务的message
 ├── scripts     --脚本目录
 │   ├── tpl
+│   ├── proto  --生成协议
 │   └── sql 
 ├── third_party --第三方依赖
 │   └── protobuffer
@@ -108,6 +109,7 @@ windows
 │           └── api
 ├── tools       --项目工具
 └── vendor
+└── test  --测试程序
 ```
 
 

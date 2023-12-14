@@ -2,8 +2,8 @@ package grpcstream
 
 import (
 	"github.com/pkg/errors"
-	xrerror "social/pkg/lib/error"
-	xrutil "social/pkg/lib/util"
+	liberror "social/lib/error"
+	libutil "social/lib/util"
 	"sync"
 )
 
@@ -31,13 +31,13 @@ func GetInstance() *mgr {
 // Add 添加
 func (p *mgr) Add(clientUUID any, stream any) error {
 	if clientUUID == nil || stream == nil {
-		return errors.WithMessage(xrerror.Param.WithExtraMessage("clientUUID or stream is nil"), xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param.WithExtraMessage("clientUUID or stream is nil"), libutil.GetCodeLocation(1).String())
 	}
 	if p.IsClientUUIDExists(clientUUID) {
-		return errors.WithMessage(xrerror.Exists.WithExtraMessage("clientUUID is already exists"), xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Exists.WithExtraMessage("clientUUID is already exists"), libutil.GetCodeLocation(1).String())
 	}
 	if p.IsStreamExists(stream) {
-		return errors.WithMessage(xrerror.Exists.WithExtraMessage("stream is already exists"), xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Exists.WithExtraMessage("stream is already exists"), libutil.GetCodeLocation(1).String())
 	}
 	//存储
 	p.clientMap.Store(clientUUID, stream)
@@ -48,10 +48,10 @@ func (p *mgr) Add(clientUUID any, stream any) error {
 // Del 删除
 func (p *mgr) Del(stream any) error {
 	if stream == nil {
-		return errors.WithMessage(xrerror.Param.WithExtraMessage("stream is nil"), xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.Param.WithExtraMessage("stream is nil"), libutil.GetCodeLocation(1).String())
 	}
 	if !p.IsStreamExists(stream) {
-		return errors.WithMessage(xrerror.NonExistent.WithExtraMessage("stream is not exists"), xrutil.GetCodeLocation(1).String())
+		return errors.WithMessage(liberror.NonExistent.WithExtraMessage("stream is not exists"), libutil.GetCodeLocation(1).String())
 	}
 	c, _ := p.streamMap.Load(stream)
 	p.clientMap.Delete(c)

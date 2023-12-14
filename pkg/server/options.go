@@ -4,9 +4,9 @@ import (
 	"github.com/pkg/errors"
 	"path"
 	"path/filepath"
+	libetcd "social/lib/etcd"
+	libutil "social/lib/util"
 	pkgbench "social/pkg/bench"
-	libetcd "social/pkg/lib/etcd"
-	libutil "social/pkg/lib/util"
 )
 
 type OnDefaultHandler func(v interface{}) error
@@ -14,13 +14,13 @@ type OnDefaultHandler func(v interface{}) error
 // options contains options to configure a server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type options struct {
-	path                   *string // 路径
-	benchPath              *string // 配置文件路径
-	subBench               pkgbench.ISubBench
-	defaultHandler         OnDefaultHandler // default 处理函数
-	etcdHandler            libetcd.OnFunc   // etcd 处理函数
-	etcdWatchServicePrefix *string          // etcd 关注 服务 前缀
-	etcdWatchCommandPrefix *string          // etcd 关注 命令 前缀
+	path           *string // 路径
+	benchPath      *string // 配置文件路径
+	subBench       pkgbench.ISubBench
+	defaultHandler OnDefaultHandler // default 处理函数
+	etcdHandler    libetcd.OnFunc   // etcd 处理函数
+	//	etcdWatchServicePrefix *string          // etcd 关注 服务 前缀
+	//	etcdWatchCommandPrefix *string          // etcd 关注 命令 前缀
 }
 
 // NewOptions 新的Options
@@ -54,15 +54,15 @@ func (p *options) SetEtcdHandler(etcdHandler libetcd.OnFunc) *options {
 	return p
 }
 
-func (p *options) SetEtcdWatchServicePrefix(etcdWatchServicePrefix string) *options {
-	p.etcdWatchServicePrefix = &etcdWatchServicePrefix
-	return p
-}
-
-func (p *options) SetEtcdWatchCommandPrefix(etcdWatchCommandPrefix string) *options {
-	p.etcdWatchCommandPrefix = &etcdWatchCommandPrefix
-	return p
-}
+//func (p *options) SetEtcdWatchServicePrefix(etcdWatchServicePrefix string) *options {
+//	p.etcdWatchServicePrefix = &etcdWatchServicePrefix
+//	return p
+//}
+//
+//func (p *options) WithWatchCommandPrefix(etcdWatchCommandPrefix string) *options {
+//	p.etcdWatchCommandPrefix = &etcdWatchCommandPrefix
+//	return p
+//}
 
 // mergeOptions combines the given *options into a single *options in a last one wins fashion.
 // The specified options are merged with the existing options on the server, with the specified options taking
@@ -88,12 +88,12 @@ func mergeOptions(opts ...*options) *options {
 		if opt.etcdHandler != nil {
 			so.etcdHandler = opt.etcdHandler
 		}
-		if opt.etcdWatchServicePrefix != nil {
-			so.etcdWatchServicePrefix = opt.etcdWatchServicePrefix
-		}
-		if opt.etcdWatchCommandPrefix != nil {
-			so.etcdWatchCommandPrefix = opt.etcdWatchCommandPrefix
-		}
+		//if opt.etcdWatchServicePrefix != nil {
+		//	so.etcdWatchServicePrefix = opt.etcdWatchServicePrefix
+		//}
+		//if opt.etcdWatchCommandPrefix != nil {
+		//	so.etcdWatchCommandPrefix = opt.etcdWatchCommandPrefix
+		//}
 	}
 	return so
 }
