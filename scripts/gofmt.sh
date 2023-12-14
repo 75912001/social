@@ -2,7 +2,10 @@
 
 cd ../
 echo "当前目录是:$PWD"
+
 gofmt -w -l -s .
+find . -name '*.go' -not -path './vendor/*' -exec unix2dos {} +
+
 cd - || exit
 
 echo "按下任意键退出脚本"
