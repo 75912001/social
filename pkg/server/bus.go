@@ -4,11 +4,12 @@ import (
 	libetcd "social/lib/etcd"
 	liblog "social/lib/log"
 	libtime "social/lib/time"
-	"social/lib/timer"
+	libtimer "social/lib/timer"
 	libutil "social/lib/util"
 )
 
-// HandleBus todo [重要] issue 在处理 event 时候, 向 eventChan 中插入 事件，注意超出eventChan的上限会阻塞.
+// HandleBus 处理总线
+// todo [重要] issue 在处理 event 时候, 向 eventChan 中插入 事件，注意超出eventChan的上限会阻塞.
 func (p *Normal) HandleBus() {
 	// 在消费eventChan时可能会往eventChan中写入事件,所以关闭服务时不能close eventChan(造成写入阻塞),通过定时检查eventChan大小来关闭
 	for {
@@ -22,15 +23,15 @@ func (p *Normal) HandleBus() {
 				p.LogMgr.Warnf("server is stopping, waiting for consume EventChan with length:%d", len(p.busChannel))
 			}
 		case v := <-p.busChannel:
-			//TODO [*] 应拿尽拿...
+			//TODO [优化] 应拿尽拿...
 			p.TimeMgr.Update()
 			var err error
 			switch t := v.(type) {
-			case *timer.Second:
+			case *libtimer.Second:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
-			case *timer.Millisecond:
+			case *libtimer.Millisecond:
 				if t.IsValid() {
 					t.Function(t.Arg)
 				}
