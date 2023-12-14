@@ -1,4 +1,4 @@
-package handler
+package bus
 
 import (
 	liblog "social/lib/log"

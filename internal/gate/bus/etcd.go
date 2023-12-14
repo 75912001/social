@@ -1,4 +1,4 @@
-package handler
+package bus
 
 import (
 	libconstant "social/lib/consts"

@@ -2,6 +2,7 @@ package router
 
 import (
 	pkgmsg "social/pkg/msg"
+	protogate "social/pkg/proto/gate"
 	"sync"
 )
 
@@ -22,7 +23,7 @@ func GetInstance() *mgr {
 type mgr struct {
 }
 
-func (p *mgr) Handle(header *pkgmsg.Header, data []byte) error {
+func (p *mgr) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, body []byte) error {
 	//TODO
 	return nil
 }

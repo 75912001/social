@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	apigate "social/api/gate"
-	gatehandler "social/internal/gate/handler"
+	gatehandler "social/internal/gate/bus"
 	libconstant "social/lib/consts"
 	libutil "social/lib/util"
 	protogate "social/pkg/proto/gate"

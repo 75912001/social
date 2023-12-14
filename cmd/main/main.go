@@ -12,11 +12,7 @@ import (
 	notificationserver "social/internal/notification"
 	recommendationserver "social/internal/recommendation"
 	robotserver "social/internal/robot/server"
-	"social/lib/log"
-	libruntime "social/lib/runtime"
-
 	liblog "social/lib/log"
-	//pkgcommon "social/pkg/common"
 	pkgserver "social/pkg/server"
 	"strconv"
 )
@@ -26,7 +22,7 @@ func main() {
 	args := os.Args
 	argNum := len(args)
 	if argNum != 4 { // program name, zoneID, serviceName, serverID
-		log.PrintErr("args len err")
+		liblog.PrintfErr("args len err %v", argNum)
 		return
 	}
 	pathName := filepath.ToSlash(args[0])
@@ -35,7 +31,7 @@ func main() {
 	{
 		strZoneID, err := strconv.ParseUint(args[1], 10, 32)
 		if err != nil {
-			log.PrintErr("zoneID err", err)
+			liblog.PrintErr("zoneID err", err)
 			return
 		}
 		normal.ZoneID = uint32(strZoneID)
@@ -44,12 +40,12 @@ func main() {
 	{
 		strServiceID, err := strconv.ParseUint(args[3], 10, 32)
 		if err != nil {
-			log.PrintErr("serviceID err", err)
+			liblog.PrintErr("serviceID err", err)
 			return
 		}
 		normal.ServiceID = uint32(strServiceID)
 	}
-	log.PrintInfo(normal.ZoneID, normal.ServiceName, normal.ServiceID)
+	liblog.PrintInfo(normal.ZoneID, normal.ServiceName, normal.ServiceID)
 	var s pkgserver.IServer
 	switch normal.ServiceName {
 	case pkgserver.NameGate:
@@ -69,37 +65,36 @@ func main() {
 	case pkgserver.NameRobot:
 		s = robotserver.NewServer(normal)
 	default:
-		log.PrintErr("service name err", normal.ServiceName)
+		liblog.PrintErr("service name err", normal.ServiceName)
 		return
 	}
 	err := s.OnLoadBench(context.Background(), normal.Options)
 	if err != nil {
-		log.PrintErr("service name err", normal.ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 	}
 	err = s.OnInit(context.Background(), normal.Options)
 	if err != nil {
-		log.PrintErr("service name err", normal.ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	liblog.GetInstance().Tracef("xxxxxxxxxxxxxxxx", libruntime.Location())
 	err = s.OnStart(context.Background())
 	if err != nil {
-		log.PrintErr("service name err", normal.ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.OnRun(context.Background())
 	if err != nil {
-		log.PrintErr("service name err", normal.ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.OnPreStop(context.Background())
 	if err != nil {
-		log.PrintErr("service name err", normal.ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	err = s.OnStop(context.Background())
 	if err != nil {
-		log.PrintErr("service name err", normal.ServiceName, err)
+		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
 	return

@@ -100,6 +100,8 @@ var (
 	Unavailable = CreateError(0xf02d, "Unavailable", "unavailable")
 	// NotImplemented 未实现
 	NotImplemented = CreateError(0xf02e, "NotImplemented", "not implemented")
+	// PacketHeaderLength 数据包头长度
+	PacketHeaderLength = CreateError(0xf02f, "PacketHeaderLength", "packet header length error")
 	// Unknown 未知
 	Unknown = CreateError(0xffff, "Unknown", "unknown")
 	// 0xffff
