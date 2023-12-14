@@ -15,7 +15,7 @@ protoc --go-grpc_out=../../ gate_server.proto
 
 cd - || exit
 
-#生成 pkg/ec/error.go 文件
+#生成 pkg/ec/ec.go 文件
 genCommonProtoError(){
   #目标文件
   desFile="../pkg/ec/ec.go"
@@ -29,23 +29,16 @@ genCommonProtoError(){
   for arg in "$@"
   do
     #echo "start gen: $arg"
-    echo "333333333333333333333"
-    echo $1
-    echo $2
-    echo $3
-    echo "3333333333333333333333"
     fileName=${arg}.proto
 	  tmpFile="../pkg/ec/ec.tmp"
 
- #   cat ${fileName} | grep "EC_" | grep -v "//EC_" > ${tmpFile}
+    grep "EC_" "${fileName}" | grep -v "//EC_" > ${tmpFile}
 
-    grep -e "EC_" -e -v "//EC_" "${fileName}" > "${tmpFile}"
-
-	  sed -i -r 's/[\s\t]*//g' ${tmpFile}
+	  sed -i -r 's/[\t]+//g' ${tmpFile}
 	  sed -i -r 's/\/\// \/\//g' ${tmpFile}
 	  sed -i -r 's/;/ tagName tagDesc/g' ${tmpFile}
 
-	  awk -F " " '{printf("%s = &liberror.Error {Code: %s,Name: \"%s\",Desc: \"%s\" } \r\n",$1,$3,$1,$6)}' ${tmpFile} > ${tmpFile}.xxx
+	  awk -F " " '{printf("%s = liberror.CreateError(%s,\"%s\",\"%s\") \r\n",$1,$3,$1,$6)}' ${tmpFile} > ${tmpFile}.xxx
 	  cat ${tmpFile}.xxx > ${tmpFile}
 	  unlink ${tmpFile}.xxx
 
