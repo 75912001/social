@@ -30,9 +30,8 @@ func (p *Normal) SetStopping() {
 }
 
 // Info 服务信息
-//
-//	NOTE 有性能影响.
-//	建议 只在调试/测试时使用.
+// [NOTE] 有性能影响.
+// 建议 只在调试/测试时使用.
 func (p *Normal) Info() string {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
