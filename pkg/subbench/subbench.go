@@ -1,9 +1,9 @@
-package bench
+package subbench
 
 import "time"
 
 type ISubBench interface {
-	Load(strJson string) error // 加载 配置文件
+	Parse(pathFile string) error // 解析 配置文件
 }
 
 type MongoDB struct {

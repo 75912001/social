@@ -9,10 +9,10 @@ type Server struct {
 	*pkgserver.Normal
 }
 
-func (p *Server) Stop(ctx context.Context) (err error) {
+func (p *Server) OnStop(ctx context.Context) (err error) {
 	return nil
 }
 
-func (p *Server) Start(ctx context.Context) (err error) {
+func (p *Server) OnStart(ctx context.Context) (err error) {
 	return nil
 }

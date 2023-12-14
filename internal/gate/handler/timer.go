@@ -3,11 +3,11 @@ package handler
 import (
 	"encoding/json"
 	gateload "social/internal/gate/load"
+	pkgbench "social/lib/bench"
 	libetcd "social/lib/etcd"
 	liblog "social/lib/log"
 	libutil "social/lib/time"
 	"social/lib/timer"
-	pkgbench "social/pkg/bench"
 	pkgserver "social/pkg/server"
 )
 

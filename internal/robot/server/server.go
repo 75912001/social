@@ -19,7 +19,7 @@ func NewServer(normal *pkgserver.Normal) *Server {
 	s := &Server{
 		Normal: normal,
 	}
-	normal.Options.SetDefaultHandler(robothandler.OnEventDefault).SetEtcdHandler(robothandler.OnEventEtcd).SetSubBench(robotsubbench.GetInstance())
+	normal.Options.WithDefaultHandler(robothandler.OnEventDefault).WithEtcdHandler(robothandler.OnEventEtcd).WithSubBench(robotsubbench.GetInstance())
 	return s
 }
 
@@ -27,8 +27,8 @@ type Server struct {
 	*pkgserver.Normal
 }
 
-func (p *Server) Start(ctx context.Context) (err error) {
-	p.Options.SetDefaultHandler(robothandler.OnEventDefault)
+func (p *Server) OnStart(ctx context.Context) (err error) {
+	p.Options.WithDefaultHandler(robothandler.OnEventDefault)
 
 	// 连接 gRPC 服务器
 	addr := fmt.Sprintf("%v:%v", robotsubbench.GetInstance().Gate.IP, robotsubbench.GetInstance().Gate.Port)
@@ -98,7 +98,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 	return nil
 }
 
-func (p *Server) PreStop(ctx context.Context) (err error) {
+func (p *Server) OnPreStop(ctx context.Context) (err error) {
 	{ // todo menglingchao 关机前处理...
 		// todo menglingchao 关闭grpc服务 拒绝新连接
 		liblog.GetInstance().Warn("grpc Service stop")

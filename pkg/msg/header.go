@@ -16,14 +16,14 @@ type Header struct {
 	ResultID  uint32 //结果id
 }
 
-func (p *Header) Pack() []byte {
+func (p *Header) Marshal() []byte {
 	var data [GProtoHeadLength]byte
 	binary.LittleEndian.PutUint32(data[0:], p.MessageID)
 	binary.LittleEndian.PutUint32(data[4:], p.ResultID)
 	return data[:]
 }
 
-func (p *Header) Unpack(data []byte) {
+func (p *Header) Unmarshal(data []byte) {
 	p.MessageID = binary.LittleEndian.Uint32(data[0:4])
 	p.ResultID = binary.LittleEndian.Uint32(data[4:8])
 }

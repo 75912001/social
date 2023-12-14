@@ -12,7 +12,7 @@ import (
 )
 
 func (p *Mgr) abnormal(ctx context.Context) {
-	liblog.PrintErr("etcd lease Run abnormal, retrying")
+	liblog.PrintErr("etcd lease OnRun abnormal, retrying")
 	go func(ctx context.Context) {
 		defer func() {
 			if libutil.IsRelease() {

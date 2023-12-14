@@ -15,12 +15,21 @@ import (
 	pkgserver "social/pkg/server"
 )
 
+var (
+	instance *Server
+)
+
+// GetInstance 获取
+func GetInstance() *Server {
+	return instance
+}
+
 func NewServer(normal *pkgserver.Normal) *Server {
-	s := &Server{
+	instance = &Server{
 		Normal: normal,
 	}
-	normal.Options.SetDefaultHandler(gatehandler.OnEventDefault).SetEtcdHandler(gatehandler.OnEventEtcd)
-	return s
+	normal.Options.WithDefaultHandler(gatehandler.OnEventDefault).WithEtcdHandler(gatehandler.OnEventEtcd)
+	return instance
 }
 
 type Server struct {
@@ -28,7 +37,7 @@ type Server struct {
 	timer *gatehandler.Timer
 }
 
-func (p *Server) Start(ctx context.Context) (err error) {
+func (p *Server) OnStart(ctx context.Context) (err error) {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//
 	//向客户端发送通知消息
@@ -96,7 +105,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 	return nil
 }
 
-func (p *Server) PreStop(ctx context.Context) (err error) {
+func (p *Server) OnPreStop(ctx context.Context) (err error) {
 	p.timer.Stop()
 	p.LogMgr.Warn("serverTimer stop")
 	{ // todo menglingchao 关机前处理...

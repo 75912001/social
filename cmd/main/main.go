@@ -13,13 +13,16 @@ import (
 	recommendationserver "social/internal/recommendation"
 	robotserver "social/internal/robot/server"
 	"social/lib/log"
-	pkgcommon "social/pkg/common"
+	libruntime "social/lib/runtime"
+
+	liblog "social/lib/log"
+	//pkgcommon "social/pkg/common"
 	pkgserver "social/pkg/server"
 	"strconv"
 )
 
 func main() {
-	normal := pkgserver.NewNormal()
+	normal := pkgserver.GetInstance()
 	args := os.Args
 	argNum := len(args)
 	if argNum != 4 { // program name, zoneID, serviceName, serverID
@@ -69,34 +72,32 @@ func main() {
 		log.PrintErr("service name err", normal.ServiceName)
 		return
 	}
-	err := s.LoadBench(context.Background(), normal.Options)
+	err := s.OnLoadBench(context.Background(), normal.Options)
 	if err != nil {
 		log.PrintErr("service name err", normal.ServiceName, err)
 	}
-	err = s.Init(context.Background(),
-		normal.Options, pkgserver.NewOptions().SetEtcdWatchServicePrefix(pkgcommon.EtcdGenerateWatchServicePrefix()).
-			SetEtcdWatchCommandPrefix(pkgcommon.EtcdGenerateWatchCommandPrefix(normal.ZoneID, normal.ServiceName)),
-	)
+	err = s.OnInit(context.Background(), normal.Options)
 	if err != nil {
 		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.Start(context.Background())
+	liblog.GetInstance().Tracef("xxxxxxxxxxxxxxxx", libruntime.Location())
+	err = s.OnStart(context.Background())
 	if err != nil {
 		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.Run(context.Background())
+	err = s.OnRun(context.Background())
 	if err != nil {
 		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.PreStop(context.Background())
+	err = s.OnPreStop(context.Background())
 	if err != nil {
 		log.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.Stop(context.Background())
+	err = s.OnStop(context.Background())
 	if err != nil {
 		log.PrintErr("service name err", normal.ServiceName, err)
 		return

@@ -1,7 +1,7 @@
 package load
 
 import (
-	pkgbench "social/pkg/bench"
+	pkgbench "social/lib/bench"
 	pkgserver "social/pkg/server"
 )
 
