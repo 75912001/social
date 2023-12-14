@@ -149,7 +149,7 @@ func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 // Start
 // [NOTE] 处理定时器相关数据,必须与该outgoingTimeoutChan线性处理.如:在同一个goroutine select中处理数据
 func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
-	p.options = mergeOptions(opts...)
+	p.options = merge(opts...)
 	if err := p.configure(p.options); err != nil {
 		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
 	}

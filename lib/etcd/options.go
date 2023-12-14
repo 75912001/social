@@ -82,10 +82,10 @@ func (p *Options) WithOutgoingEventChan(eventChan chan<- interface{}) *Options {
 	return p
 }
 
-// mergeOptions combines the given *Options into a single *Options in a last one wins fashion.
+// merge combines the given *Options into a single *Options in a last one wins fashion.
 // The specified Options are merged with the existing Options, with the specified Options taking
 // precedence.
-func mergeOptions(opts ...*Options) *Options {
+func merge(opts ...*Options) *Options {
 	newOptions := NewOptions()
 	for _, opt := range opts {
 		if opt == nil {

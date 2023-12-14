@@ -42,3 +42,8 @@ func GetCodeLocation(skip int) *CodeLocation {
 	}
 	return c
 }
+
+// Location 获取代码位置
+func Location() string {
+	return GetCodeLocation(2).String()
+}

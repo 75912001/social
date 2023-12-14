@@ -21,25 +21,25 @@ type Options struct {
 	outgoingTimeoutChan     chan<- interface{} // 是超时事件放置的channel,由外部传入.超时的*Second/*Millisecond都会放入其中
 }
 
-func (p *Options) SetScanSecondDuration(scanSecondDuration *time.Duration) *Options {
+func (p *Options) WithScanSecondDuration(scanSecondDuration *time.Duration) *Options {
 	p.scanSecondDuration = scanSecondDuration
 	return p
 }
 
-func (p *Options) SetScanMillisecondDuration(scanMillisecondDuration *time.Duration) *Options {
+func (p *Options) WithScanMillisecondDuration(scanMillisecondDuration *time.Duration) *Options {
 	p.scanMillisecondDuration = scanMillisecondDuration
 	return p
 }
 
-func (p *Options) SetOutgoingTimerOutChan(timeoutChan chan<- interface{}) *Options {
+func (p *Options) WithOutgoingTimerOutChan(timeoutChan chan<- interface{}) *Options {
 	p.outgoingTimeoutChan = timeoutChan
 	return p
 }
 
-// mergeOptions combines the given *Options into a single *Options in a last one wins fashion.
+// merge combines the given *Options into a single *Options in a last one wins fashion.
 // The specified Options are merged with the existing Options on the server, with the specified Options taking
 // precedence.
-func mergeOptions(opts ...*Options) *Options {
+func merge(opts ...*Options) *Options {
 	so := NewOptions()
 	for _, opt := range opts {
 		if opt == nil {

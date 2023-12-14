@@ -33,7 +33,7 @@ func (p *Mgr) Handler(key string, val string) error {
 
 // Start 开始
 func (p *Mgr) Start(ctx context.Context, opts ...*Options) error {
-	p.options = mergeOptions(opts...)
+	p.options = merge(opts...)
 	err := configure(p.options)
 	if err != nil {
 		return errors.WithMessage(err, libruntime.GetCodeLocation(1).String())
