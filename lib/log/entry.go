@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 	libtime "social/lib/time"
 	"strconv"
 	"time"
@@ -146,7 +146,7 @@ func (p *Entry) log(level Level, skip int, v ...interface{}) {
 
 	if *p.logger.options.isReportCaller {
 		pc, _, line, ok := runtime.Caller(skip)
-		funcName := libconstant.Unknown
+		funcName := libconsts.Unknown
 		if !ok {
 			line = 0
 		} else {
@@ -166,7 +166,7 @@ func (p *Entry) logf(level Level, skip int, format string, v ...interface{}) {
 
 	if *p.logger.options.isReportCaller {
 		pc, _, line, ok := runtime.Caller(skip)
-		funcName := libconstant.Unknown
+		funcName := libconsts.Unknown
 		if !ok {
 			line = 0
 		} else {

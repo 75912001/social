@@ -4,7 +4,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"runtime/debug"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 	liblog "social/lib/log"
 	libutil "social/lib/util"
 )
@@ -18,13 +18,13 @@ func StartHTTPprof(addr string) {
 		defer func() {
 			if libutil.IsRelease() {
 				if err := recover(); err != nil {
-					liblog.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+					liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 				}
 			}
-			liblog.PrintErr(libconstant.GoroutineDone)
+			liblog.PrintErr(libconsts.GoroutineDone)
 		}()
 		if err := http.ListenAndServe(addr, nil); err != nil {
-			liblog.PrintErr(libconstant.Failure, addr, err)
+			liblog.PrintErr(libconsts.Failure, addr, err)
 		}
 	}()
 }

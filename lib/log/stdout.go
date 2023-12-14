@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 	libtime "social/lib/time"
 )
 
@@ -21,7 +21,7 @@ func PrintInfo(v ...interface{}) {
 		GetInstance().log(LevelInfo, v...)
 	} else {
 		pc, _, line, ok := runtime.Caller(calldepth1)
-		funcName := libconstant.Unknown
+		funcName := libconsts.Unknown
 		if !ok {
 			line = 0
 		} else {
@@ -48,7 +48,7 @@ func PrintfInfo(format string, v ...interface{}) {
 		GetInstance().logf(LevelInfo, format, v...)
 	} else {
 		pc, _, line, ok := runtime.Caller(calldepth1)
-		funcName := libconstant.Unknown
+		funcName := libconsts.Unknown
 		if !ok {
 			line = 0
 		} else {

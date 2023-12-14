@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 	libtime "social/lib/time"
 )
 
@@ -21,7 +21,7 @@ func PrintErr(v ...interface{}) {
 		GetInstance().log(LevelError, v...)
 	} else {
 		pc, _, line, ok := runtime.Caller(calldepth1)
-		funcName := libconstant.Unknown
+		funcName := libconsts.Unknown
 		if !ok {
 			line = 0
 		} else {
@@ -48,7 +48,7 @@ func PrintfErr(format string, v ...interface{}) {
 		GetInstance().logf(LevelError, format, v...)
 	} else {
 		pc, _, line, ok := runtime.Caller(calldepth1)
-		funcName := libconstant.Unknown
+		funcName := libconsts.Unknown
 		if !ok {
 			line = 0
 		} else {

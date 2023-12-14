@@ -128,7 +128,8 @@ func configure(opt *Options) error {
 		return errors.WithMessage(liberror.Param, libruntime.GetCodeLocation(1).String())
 	}
 	if opt.ttl == nil {
-		opt.ttl = &TtlSecondDefault
+		ttl := TtlSecondDefault
+		opt.ttl = &ttl
 	}
 	if opt.grantLeaseMaxRetries == nil {
 		opt.grantLeaseMaxRetries = &grantLeaseMaxRetriesDefault

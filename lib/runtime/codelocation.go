@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 	"runtime"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 )
 
 // CodeLocation 代码位置
@@ -29,8 +29,8 @@ func (p *CodeLocation) String() string {
 //		skip:The argument skip is the number of stack frames to ascend, with 0 identifying the caller of Caller.
 func GetCodeLocation(skip int) *CodeLocation {
 	c := &CodeLocation{
-		FileName: libconstant.Unknown,
-		FuncName: libconstant.Unknown,
+		FileName: libconsts.Unknown,
+		FuncName: libconsts.Unknown,
 	}
 
 	pc, fileName, line, ok := runtime.Caller(skip)

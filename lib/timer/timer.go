@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"runtime/debug"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 	"social/lib/log"
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
@@ -56,11 +56,11 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 	defer func() {
 		if util.IsRelease() {
 			if err := recover(); err != nil {
-				log.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+				log.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		log.PrintInfo(libconstant.GoroutineDone)
+		log.PrintInfo(libconsts.GoroutineDone)
 	}()
 	idleDelay := time.NewTimer(*p.options.scanSecondDuration)
 	defer func() {
@@ -69,7 +69,7 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.PrintInfo(libconstant.GoroutineDone)
+			log.PrintInfo(libconsts.GoroutineDone)
 			return
 		case v := <-p.secondChan:
 			s := v.(*Second)
@@ -86,11 +86,11 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 	defer func() {
 		if util.IsRelease() {
 			if err := recover(); err != nil {
-				log.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+				log.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		log.PrintInfo(libconstant.GoroutineDone)
+		log.PrintInfo(libconsts.GoroutineDone)
 	}()
 	scanMillisecondDuration := *p.options.scanMillisecondDuration
 	scanMillisecond := scanMillisecondDuration / time.Millisecond
@@ -103,7 +103,7 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.PrintInfo(libconstant.GoroutineDone)
+			log.PrintInfo(libconsts.GoroutineDone)
 			return
 		case v := <-p.milliSecondChan:
 			p.millisecondList.PushBack(v)
@@ -123,11 +123,11 @@ func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 	defer func() {
 		if util.IsRelease() {
 			if err := recover(); err != nil {
-				log.PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+				log.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		log.PrintInfo(libconstant.GoroutineDone)
+		log.PrintInfo(libconsts.GoroutineDone)
 	}()
 	ticker := time.NewTicker(*p.options.scanMillisecondDuration)
 	defer func() {
@@ -136,7 +136,7 @@ func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.PrintInfo(libconstant.GoroutineDone)
+			log.PrintInfo(libconsts.GoroutineDone)
 			return
 		case v := <-p.milliSecondChan:
 			p.millisecondList.PushBack(v)

@@ -11,7 +11,7 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
-	libconstant "social/lib/consts"
+	libconsts "social/lib/consts"
 	liberror "social/lib/error"
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
@@ -101,11 +101,11 @@ func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
 		defer func() {
 			if util.IsRelease() {
 				if err := recover(); err != nil {
-					PrintErr(libconstant.GoroutinePanic, err, debug.Stack())
+					PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 				}
 			}
 			p.waitGroupOutPut.Done()
-			PrintInfo(libconstant.GoroutineDone)
+			PrintInfo(libconsts.GoroutineDone)
 		}()
 		p.doLog()
 	}()
