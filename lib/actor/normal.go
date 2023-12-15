@@ -11,6 +11,7 @@ import (
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
 	libutil "social/lib/util"
+	"sync"
 )
 
 type Normal struct {
@@ -25,35 +26,47 @@ type Normal struct {
 	//行为 behavior
 	// todo menglingchao
 	//指actor处理逻辑，如果通过行为来操作自身state
-	mailBox chan IMsg
+	mailBox    chan IMsg
+	waitGroup  sync.WaitGroup // Stop 等待信号
+	cancelCtx  context.Context
+	cancelFunc context.CancelFunc
 }
 
 func (p *Normal) SendToMailBox(msg IMsg) error {
-	p.mailBox <- msg
-	return nil
+	select {
+	case <-p.cancelCtx.Done():
+		return context.Canceled
+	case p.mailBox <- msg:
+		return nil
+	}
 }
 
-func (p *Normal) OnStart(_ context.Context, opts ...*Options) error {
+func (p *Normal) OnStart(ctx context.Context, opts ...*Options) error {
 	p.options = merge(opts...)
 	err := configure(p.options)
 	if err != nil {
 		return errors.WithMessage(err, libruntime.Location())
 	}
+	ctxWithCancel, cancelFunc := context.WithCancel(ctx)
+	p.cancelCtx = ctxWithCancel
+	p.cancelFunc = cancelFunc
 	p.mailBox = make(chan IMsg, libbench.GetInstance().Base.ActorChannelNumber)
-	go func() {
+	p.waitGroup.Add(1)
+	go func(ctx context.Context) {
 		defer func() {
 			if libutil.IsRelease() {
 				if err := recover(); err != nil {
 					liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 				}
 			}
+			p.waitGroup.Done()
 			liblog.PrintInfo(libconsts.GoroutineDone, p)
 		}()
 		for v := range p.mailBox {
 			nowTime := libtime.NowTime()
 			liblog.GetInstance().Tracef("Actor %v received message: %v", p.ID, v)
 			switch t := v.(type) {
-			case *Msg: // 在这里处理接收到的消息
+			case *Msg:
 				// 使用 go xxx() 的方式避免阻塞... 这里需要标记消息是需要顺序处理的,还是可以多协程处理,来做不同的处理策略.
 				err = p.options.defaultHandler(t.unserializedPacket)
 			default:
@@ -75,12 +88,22 @@ func (p *Normal) OnStart(_ context.Context, opts ...*Options) error {
 		}
 		// goroutine 退出,再设置chan为nil, (如果没有退出就设置为nil, 读chan == nil  会 block)
 		p.mailBox = nil
-	}()
-	return liberror.NotImplemented
+	}(ctxWithCancel)
+	return nil
 }
 
 func (p *Normal) OnRun(_ context.Context) error {
 	return nil
+}
+
+// Exit 退出服务
+func (p *Normal) Exit() {
+	liblog.GetInstance().Warnf("actor exit... %v", p.ID)
+	if p.cancelFunc != nil {
+		p.cancelFunc()
+		p.cancelFunc = nil
+	}
+	liblog.GetInstance().Warnf("actor exit done %v", p.ID)
 }
 
 func (p *Normal) OnPreStop(_ context.Context) error {
@@ -89,6 +112,10 @@ func (p *Normal) OnPreStop(_ context.Context) error {
 }
 
 func (p *Normal) OnStop(_ context.Context) error {
+	liblog.GetInstance().Warnf("actor OnStop... %v", p.ID)
 	close(p.mailBox)
+	// 等待 goroutine退出.
+	p.waitGroup.Wait()
+	liblog.GetInstance().Warnf("actor OnStop done %v", p.ID)
 	return nil
 }
