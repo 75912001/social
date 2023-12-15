@@ -15,7 +15,7 @@ import (
 	liberror "social/lib/error"
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
-	"social/lib/util"
+	libutil "social/lib/util"
 	"strconv"
 	"sync"
 	"time"
@@ -99,7 +99,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
 	p.waitGroupOutPut.Add(1)
 	go func() {
 		defer func() {
-			if util.IsRelease() {
+			if libutil.IsRelease() {
 				if err := recover(); err != nil {
 					PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 				}
@@ -115,7 +115,7 @@ func (p *Mgr) Start(_ context.Context, opts ...*Options) error {
 // getLogDuration 取得日志刻度
 func (p *Mgr) getLogDuration(sec int64) int {
 	var logFormat string
-	if util.IsRelease() {
+	if libutil.IsRelease() {
 		logFormat = "2006010215" //年月日小时
 	} else {
 		logFormat = "20060102" //年月日
