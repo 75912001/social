@@ -17,7 +17,7 @@ import (
 func (s *Server) BidirectionalBinaryData(stream protogate.Service_BidirectionalBinaryDataServer) error {
 	for {
 		request, err := stream.Recv()
-		if err != nil {
+		if err != nil { // 错误处理 todo menglingchao 此处处理可做成一个函数
 			liblog.GetInstance().Fatal(err, liberror.Link, stream, libruntime.Location())
 			// 使用 status.FromError 函数获取 gRPC 状态
 			st, ok := status.FromError(err)
@@ -62,17 +62,15 @@ func (s *Server) BidirectionalBinaryData(stream protogate.Service_BidirectionalB
 		header := &pkgmsg.Header{}
 		header.Unmarshal(data[:pkgmsg.GProtoHeadLength])
 		liblog.GetInstance().Trace(header.String())
-		if protogate.User2GateMessageMinCMD < header.MessageID && header.MessageID < protogate.User2GateMessageMaxCMD { //gate的消息
+		if gateserver.GetInstance().CanHandle(header.MessageID) {
 			err = gateserver.Handle(stream, data[pkgmsg.GProtoHeadLength:])
 			if err != nil {
 				liblog.GetInstance().Warn(err, libruntime.Location())
-				return err
 			}
-		} else { //非gate的消息
+		} else { //非gate的消息,交给router处理
 			err = gaterouter.GetInstance().Handle(stream, header, data[pkgmsg.GProtoHeadLength:])
 			if err != nil {
 				liblog.GetInstance().Warn(err, libruntime.Location())
-				return err
 			}
 		}
 	}

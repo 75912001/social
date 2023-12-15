@@ -9,6 +9,16 @@ import (
 	protogate "social/pkg/proto/gate"
 )
 
+// CanHandle 是否可以处理的命令 todo menglingchao
+func (p *Server) CanHandle(cmd uint32) bool {
+	// 在这里编写判断逻辑
+	// 判断cmd是否符合自己可以处理的消息类型
+	// 如果符合，返回true；否则，返回false
+	//if protogate.User2GateMessageMinCMD < header.MessageID && header.MessageID < protogate.User2GateMessageMaxCMD { //gate的消息
+
+	return false
+}
+
 func Handle(stream protogate.Service_BidirectionalBinaryDataServer, data []byte) error {
 	packet := pkgmsg.Packet{}
 	err := packet.Unmarshal(data)
