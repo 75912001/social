@@ -4,8 +4,8 @@ cd ../
 echo "当前目录是:$PWD"
 
 gofmt -w -l -s .
-#find . -name '*.go' -not -path './vendor/*' -exec unix2dos {} +
-find . -name '*.go' -exec dos2unix {} +
+echo "文件使用LF, dos2unix"
+find . \( -name '*.go' -o -name '*.proto' -o -name '*.sh' \) -exec dos2unix {} +
 
 cd - || exit
 
