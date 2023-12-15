@@ -19,7 +19,6 @@ message RegisterRes//0x1002#注册响应 gate->user
 
 message LogoutReq//0x1003#注销请求 user->gate
 {
-  ServiceKey serviceKey = 1;
 }
 message LogoutRes//0x1004#注销响应 gate->user
 {

@@ -2,6 +2,7 @@
 提供社交服务,其中包括好友系统,博客系统
 
 
+
 ## TODO
 >> robot 测试 
 >>> 1.注册
@@ -13,12 +14,14 @@
 > 在gate中创建管理器, 管理 friend system
 > 
 
+# 使用说明
 
-项目初始化
+
+## 项目初始化
 
     go mod init social
 
-安装包
+## 安装包
 
     go get google.golang.org/grpc
     go get -v github.com/pkg/errors
@@ -27,14 +30,11 @@
     *go get github.com/agiledragon/gomonkey
 
 
-使用以下命令安装Go的协议编译器插件
+## 使用以下命令安装Go的协议编译器插件
 
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
     相关link:https://grpc.io/docs/languages/go/quickstart/
-
-
-    
 
 ## protobuf 工具
 

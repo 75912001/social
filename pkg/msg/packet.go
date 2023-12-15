@@ -6,6 +6,7 @@ import (
 	libruntime "social/lib/runtime"
 )
 
+// Packet 协议包
 type Packet struct {
 	Header  Header
 	Message proto.Message // Marshal 时候使用
