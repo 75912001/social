@@ -43,14 +43,15 @@ type Mgr struct {
 }
 
 type Base struct {
-	Version          string          `json:"version"`
-	PprofHttpPort    uint32          `json:"pprofHttpPort"`    //pprof性能分析 http端口 default:0 不使用
-	LogLevel         int             `json:"logLevel"`         //日志等级 default:7
-	LogAbsPath       string          `json:"logAbsPath"`       //日志绝对路径 default:/data/xxx/log
-	GoMaxProcess     int             `json:"goMaxProcess"`     //default:runtime.NumCPU()
-	AvailableLoad    uint32          `json:"availableLoad"`    //可用负载, 可用资源数 default:math.MaxUint32
-	BusChannelNumber uint32          `json:"busChannelNumber"` //事件chan数量. default: pkgconsts.BusChannelNumberDefault 大约占用15.6MB
-	RunMode          libutil.RunMode `json:"runMode"`          //运行模式 0:release 1:debug default:0,release
+	Version            string          `json:"version"`
+	PprofHttpPort      uint32          `json:"pprofHttpPort"`      //pprof性能分析 http端口 default:0 不使用
+	LogLevel           int             `json:"logLevel"`           //日志等级 default:7
+	LogAbsPath         string          `json:"logAbsPath"`         //日志绝对路径 default:/data/xxx/log
+	GoMaxProcess       int             `json:"goMaxProcess"`       //default:runtime.NumCPU()
+	AvailableLoad      uint32          `json:"availableLoad"`      //可用负载, 可用资源数 default:math.MaxUint32
+	BusChannelNumber   uint32          `json:"busChannelNumber"`   //事件chan数量. default: libconsts.BusChannelNumberDefault
+	ActorChannelNumber uint32          `json:"actorChannelNumber"` //事件chan数量. default: libconsts.ActorChannelNumberDefault
+	RunMode            libutil.RunMode `json:"runMode"`            //运行模式 0:release 1:debug default:0,release
 }
 
 type Server struct {
@@ -116,6 +117,9 @@ func (p *Mgr) Parse(pathFile string, projectName string, zoneID uint32, serviceN
 	}
 	if 0 == p.Base.BusChannelNumber {
 		p.Base.BusChannelNumber = libconsts.BusChannelNumberDefault
+	}
+	if 0 == p.Base.ActorChannelNumber {
+		p.Base.ActorChannelNumber = libconsts.ActorChannelNumberDefault
 	}
 	libutil.GRunMode = p.Base.RunMode
 	//server
