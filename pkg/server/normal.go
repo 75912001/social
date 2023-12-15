@@ -206,6 +206,12 @@ func (p *Normal) OnRun(_ context.Context) error {
 	return nil
 }
 
+// Exit 退出服务
+func (p *Normal) Exit() {
+	p.LogMgr.Warn("server Exit")
+	p.exitChan <- struct{}{}
+}
+
 func (p *Normal) OnPreStop(_ context.Context) error {
 	return liberror.NotImplemented
 }
@@ -244,10 +250,4 @@ func (p *Normal) OnStop(_ context.Context) error {
 	err = p.LogMgr.Stop()
 	liblog.PrintInfo(err, "server Log stop")
 	return nil
-}
-
-// Exit 退出服务
-func (p *Normal) Exit() {
-	p.LogMgr.Warn("server Exit")
-	p.exitChan <- struct{}{}
 }
