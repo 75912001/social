@@ -93,7 +93,7 @@ func (p *Server) OnStart(ctx context.Context) (err error) {
 			p.LogMgr.Fatalf("Failed to listen: %v", err)
 		}
 
-		newServer := grpc.NewServer()
+		newServer := grpc.NewServer(grpc.MaxRecvMsgSize(1024 * 1024 * 1024)) //todo menglingchao 设置接受大小
 		protogate.RegisterServiceServer(newServer, &apigate.Server{})
 
 		p.LogMgr.Tracef("Server is running on %v", addr)
