@@ -19,12 +19,12 @@ func (p *Server) CanHandle(messageID uint32) bool {
 	return false
 }
 
-func (p *Server) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, data []byte) error {
-	p.LogMgr.Trace(pkgproto.CMDMap[header.MessageID], stream, header, data)
+func (p *Server) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, body []byte) error {
+	p.LogMgr.Trace(pkgproto.CMDMap[header.MessageID], stream, header, body)
 	switch header.MessageID {
 	case protogate.RegisterReqCMD:
 		var req protogate.RegisterReq
-		err := proto.Unmarshal(data, &req)
+		err := proto.Unmarshal(body, &req)
 		if err != nil {
 			p.LogMgr.Error(err, libruntime.Location())
 			return err
@@ -47,7 +47,7 @@ func (p *Server) Handle(stream protogate.Service_BidirectionalBinaryDataServer, 
 		}
 	case protogate.LogoutReqCMD:
 		var req protogate.LogoutReq
-		err := proto.Unmarshal(data, &req)
+		err := proto.Unmarshal(body, &req)
 		if err != nil {
 			p.LogMgr.Error(err, libruntime.Location())
 			return err

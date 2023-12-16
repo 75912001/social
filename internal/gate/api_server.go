@@ -2,6 +2,6 @@ package gate
 
 import protogate "social/pkg/proto/gate"
 
-type Server struct {
+type APIServer struct {
 	protogate.UnimplementedServiceServer
 }

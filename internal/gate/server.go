@@ -7,7 +7,6 @@ import (
 	"net"
 	"runtime"
 	"runtime/debug"
-	apigate "social/api/gate"
 	libconsts "social/lib/consts"
 	libutil "social/lib/util"
 	protogate "social/pkg/proto/gate"
@@ -56,7 +55,7 @@ func (p *Server) OnStart(_ context.Context) (err error) {
 			p.LogMgr.Fatalf("Failed to listen: %v", err)
 		}
 		p.GrpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(1024 * 1024 * 1024)) //todo menglingchao 设置接受大小
-		protogate.RegisterServiceServer(p.GrpcServer, &apigate.Server{})
+		protogate.RegisterServiceServer(p.GrpcServer, &APIServer{})
 		p.LogMgr.Tracef("Server is running on %v", addr)
 		if err = p.GrpcServer.Serve(listen); err != nil {
 			p.LogMgr.Fatalf("Failed to serve: %v", err)

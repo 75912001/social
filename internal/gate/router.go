@@ -9,7 +9,7 @@ import (
 type Router struct {
 }
 
-func (p *Router) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, body []byte) error {
+func (p *Router) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, data []byte) error {
 	//TODO
 	return nil
 }
