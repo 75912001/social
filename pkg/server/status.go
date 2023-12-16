@@ -43,7 +43,7 @@ func (p *Normal) Info() string {
 }
 
 func (p *Normal) serviceInformationPrintingStart() {
-	p.TimerMgr.AddSecond(p.serviceInformationPrinting, nil, p.TimeMgr.TimeSecond()+InfoTimeOutSec)
+	p.informationPrintingTimerSecond = p.TimerMgr.AddSecond(p.serviceInformationPrinting, nil, p.TimeMgr.ShadowTimeSecond()+InfoTimeOutSec)
 }
 
 // 服务信息 打印

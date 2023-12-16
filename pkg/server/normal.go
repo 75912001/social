@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -73,6 +74,9 @@ type Normal struct {
 	busCheckChan        chan struct{} // 检查总线channel,触发检查总线中的数据是否为0,且服务status == StatusStopping
 	status              status        //服务状态
 	exitChan            chan struct{}
+	GrpcServer          *grpc.Server
+
+	informationPrintingTimerSecond *libtimer.Second
 }
 
 func (p *Normal) OnLoadBench(_ context.Context, opts ...*Options) error {
@@ -208,6 +212,9 @@ func (p *Normal) OnRun(_ context.Context) error {
 
 // Exit 退出服务
 func (p *Normal) Exit() {
+	if p.GrpcServer != nil {
+		p.GrpcServer.GracefulStop()
+	}
 	p.LogMgr.Warn("server Exit")
 	p.exitChan <- struct{}{}
 }
@@ -241,6 +248,9 @@ func (p *Normal) OnStop(_ context.Context) error {
 	// 等待GEventChan处理结束
 	p.busChannelWaitGroup.Wait()
 
+	if p.informationPrintingTimerSecond != nil {
+		libtimer.DelSecond(p.informationPrintingTimerSecond)
+	}
 	p.TimerMgr.Stop()
 	p.LogMgr.Warn("server Timer stop")
 
