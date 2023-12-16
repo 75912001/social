@@ -6,6 +6,16 @@ import (
 	libruntime "social/lib/runtime"
 )
 
+func NewPacket(messageID uint32, resultID uint32, message proto.Message) *Packet {
+	return &Packet{
+		Header: Header{
+			MessageID: messageID,
+			ResultID:  resultID,
+		},
+		Message: message,
+	}
+}
+
 // Packet 协议包
 type Packet struct {
 	Header  Header
@@ -19,7 +29,7 @@ func (p *Packet) Marshal() ([]byte, error) {
 	var messageBuf []byte
 	var err error
 	if messageBuf, err = proto.Marshal(p.Message); nil != err && proto.ErrNil != err {
-		return nil, errors.WithMessagef(err, libruntime.GetCodeLocation(1).String())
+		return nil, errors.WithMessagef(err, libruntime.Location())
 	}
 
 	packetLength := GProtoHeadLength + uint32(len(messageBuf))

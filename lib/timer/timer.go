@@ -9,15 +9,13 @@ import (
 	"math"
 	"runtime/debug"
 	libconsts "social/lib/consts"
-	"social/lib/log"
+	liblog "social/lib/log"
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
-	"social/lib/util"
+	libutil "social/lib/util"
 	"sync"
 	"time"
 )
-
-var SecondOffset int64 // 时间偏移量-秒
 
 var (
 	instance *Mgr
@@ -45,7 +43,7 @@ type Mgr struct {
 
 // ShadowTimeSecond 叠加偏移量的秒
 func (p *Mgr) ShadowTimeSecond() int64 {
-	return libtime.NowTime().Unix() + SecondOffset
+	return libtime.NowTime().Unix() + libtime.GetInstance().SecondOffset
 }
 
 // OnFun 回调定时器函数(使用协程回调)
@@ -54,13 +52,13 @@ type OnFun func(arg interface{})
 // 每秒更新
 func (p *Mgr) funcSecond(ctx context.Context) {
 	defer func() {
-		if util.IsRelease() {
+		if libutil.IsRelease() {
 			if err := recover(); err != nil {
-				log.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
+				liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		log.PrintInfo(libconsts.GoroutineDone)
+		liblog.PrintInfo(libconsts.GoroutineDone)
 	}()
 	idleDelay := time.NewTimer(*p.options.scanSecondDuration)
 	defer func() {
@@ -69,7 +67,7 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.PrintInfo(libconsts.GoroutineDone)
+			liblog.PrintInfo(libconsts.GoroutineDone)
 			return
 		case v := <-p.secondChan:
 			s := v.(*Second)
@@ -84,13 +82,13 @@ func (p *Mgr) funcSecond(ctx context.Context) {
 // 每millisecond个毫秒更新
 func (p *Mgr) funcMillisecond(ctx context.Context) {
 	defer func() {
-		if util.IsRelease() {
+		if libutil.IsRelease() {
 			if err := recover(); err != nil {
-				log.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
+				liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		log.PrintInfo(libconsts.GoroutineDone)
+		liblog.PrintInfo(libconsts.GoroutineDone)
 	}()
 	scanMillisecondDuration := *p.options.scanMillisecondDuration
 	scanMillisecond := scanMillisecondDuration / time.Millisecond
@@ -103,7 +101,7 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.PrintInfo(libconsts.GoroutineDone)
+			liblog.PrintInfo(libconsts.GoroutineDone)
 			return
 		case v := <-p.milliSecondChan:
 			p.millisecondList.PushBack(v)
@@ -121,13 +119,13 @@ func (p *Mgr) funcMillisecond(ctx context.Context) {
 // Deprecated: [bug]当扫描频率的毫秒数较低的时候,来不及处理,会累加...  每millisecond个毫秒更新
 func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 	defer func() {
-		if util.IsRelease() {
+		if libutil.IsRelease() {
 			if err := recover(); err != nil {
-				log.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
+				liblog.PrintErr(libconsts.GoroutinePanic, err, debug.Stack())
 			}
 		}
 		p.waitGroup.Done()
-		log.PrintInfo(libconsts.GoroutineDone)
+		liblog.PrintInfo(libconsts.GoroutineDone)
 	}()
 	ticker := time.NewTicker(*p.options.scanMillisecondDuration)
 	defer func() {
@@ -136,7 +134,7 @@ func (p *Mgr) funcMillisecondNewTicker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.PrintInfo(libconsts.GoroutineDone)
+			liblog.PrintInfo(libconsts.GoroutineDone)
 			return
 		case v := <-p.milliSecondChan:
 			p.millisecondList.PushBack(v)

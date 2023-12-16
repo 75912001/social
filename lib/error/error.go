@@ -20,7 +20,7 @@ func CheckForDuplicates(err *Error) error {
 		errMap = make(map[uint32]struct{})
 	})
 	if _, ok := errMap[err.Code]; ok { //不可重复
-		return errors.WithMessage(Duplicate, getCodeLocation(1).Error())
+		return errors.Errorf("duplicate error %v", getCodeLocation(1))
 	}
 	errMap[err.Code] = struct{}{}
 	return nil

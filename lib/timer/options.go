@@ -13,7 +13,7 @@ func NewOptions() *Options {
 	return ops
 }
 
-// Options contains Options to configure a server instance. Each option can be set through setter functions. See
+// Options contains Options to configure instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type Options struct {
 	scanSecondDuration      *time.Duration     // 扫描秒级定时器,纳秒间隔(如 100000000,则每100毫秒扫描一次秒定时器)

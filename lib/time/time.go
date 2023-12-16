@@ -6,11 +6,13 @@ import (
 	"time"
 )
 
-var now = time.Now().UTC()
+var utcAble = false //是否使用UTC时间
 
 func NowTime() time.Time {
-	return now
-	//return time.Now().UTC()
+	if utcAble {
+		return time.Now().UTC()
+	}
+	return time.Now()
 }
 
 // GenYMD 获取 e.g.:20210819
@@ -30,7 +32,7 @@ var (
 // GetInstance 获取
 func GetInstance() *Mgr {
 	once.Do(func() {
-		instance = new(Mgr)
+		instance = &Mgr{}
 	})
 	return instance
 }
@@ -60,8 +62,21 @@ func (p *Mgr) ShadowTimeSecond() int64 {
 	return p.Second + p.SecondOffset
 }
 
-// DayBeginSec 当天开始时间戳
-func DayBeginSec(t *time.Time) int64 {
+// DayBeginSecByTime 当天开始时间戳
+func DayBeginSecByTime(t *time.Time) int64 {
+	if utcAble {
+		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).Unix()
+	}
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).Unix()
+}
+
+// DayBeginSec 返回给定 UTC 时间戳所在天的开始时间戳
+func DayBeginSec(timestamp int64) int64 {
+	if utcAble {
+		t := time.Unix(timestamp, 0).UTC()
+		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).Unix()
+	}
+	t := time.Unix(timestamp, 0)
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).Unix()
 }
 

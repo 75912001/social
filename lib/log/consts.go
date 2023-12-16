@@ -13,8 +13,6 @@ const (
 )
 
 const (
-	LogAbsPathDefault = "/data/log"
-
 	accessLogFileBaseName = "access.log"
 	errorLogFileBaseName  = "error.log"
 )

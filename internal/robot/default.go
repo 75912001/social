@@ -1,4 +1,4 @@
-package handler
+package robot
 
 import (
 	liblog "social/lib/log"

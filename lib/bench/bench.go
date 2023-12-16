@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	libconsts "social/lib/consts"
 	liberror "social/lib/error"
@@ -107,7 +108,8 @@ func (p *Mgr) Parse(pathFile string, projectName string, zoneID uint32, serviceN
 		p.Base.LogLevel = int(liblog.LevelOn)
 	}
 	if len(p.Base.LogAbsPath) == 0 {
-		p.Base.LogAbsPath = path.Join(liblog.LogAbsPathDefault + projectName)
+		benchPath := filepath.ToSlash(filepath.Dir(pathFile))
+		p.Base.LogAbsPath = path.Join(benchPath, "log")
 	}
 	if 0 == p.Base.GoMaxProcess {
 		p.Base.GoMaxProcess = runtime.NumCPU()
