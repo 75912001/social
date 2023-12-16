@@ -61,9 +61,10 @@ windows
     增
     ./etcdctl --endpoints=127.0.0.1:2379 put /test "Hello etcd"
     查
-    ./etcdctl --endpoints=127.0.0.1:2379 get --prefix /
+    ./etcdctl --endpoints=127.0.0.1:2379 get --prefix social
     删
-    ./etcdctl --endpoints=1270.0.01:2379 del --prev-kv --prefix /
+    ./etcdctl --endpoints=127.0.0.1:2379 del --prefix xxxx
+
 
 # 目录说明
 
