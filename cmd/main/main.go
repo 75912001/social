@@ -7,11 +7,11 @@ import (
 	blogserver "social/internal/blog"
 	cleansingserver "social/internal/cleansing"
 	friendserver "social/internal/friend"
-	gateserver "social/internal/gate/server"
+	"social/internal/gate"
 	interactionserver "social/internal/interaction"
 	notificationserver "social/internal/notification"
 	recommendationserver "social/internal/recommendation"
-	robotserver "social/internal/robot/server"
+	robotserver "social/internal/robot"
 	liblog "social/lib/log"
 	pkgserver "social/pkg/server"
 	"strconv"
@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 	pathName := filepath.ToSlash(args[0])
-	normal.ProgramPath = filepath.Dir(pathName)
+	normal.ProgramPath = filepath.ToSlash(filepath.Dir(pathName))
 	normal.ProgramName = filepath.Base(pathName)
 	{
 		strZoneID, err := strconv.ParseUint(args[1], 10, 32)
@@ -49,7 +49,7 @@ func main() {
 	var s pkgserver.IServer
 	switch normal.ServiceName {
 	case pkgserver.NameGate:
-		s = gateserver.NewServer(normal)
+		s = gate.NewServer(normal)
 	case pkgserver.NameFriend:
 		s = &friendserver.Server{Normal: normal}
 	case pkgserver.NameInteraction:
