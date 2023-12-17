@@ -49,7 +49,7 @@ func main() {
 	var s pkgserver.IServer
 	switch normal.ServiceName {
 	case pkgserver.NameGate:
-		s = gate.NewServer(normal)
+		s = gate.NewGate(normal)
 	case pkgserver.NameFriend:
 		s = &friendserver.Server{Normal: normal}
 	case pkgserver.NameInteraction:
