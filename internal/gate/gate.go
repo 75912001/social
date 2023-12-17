@@ -14,32 +14,45 @@ import (
 )
 
 var (
-	server *Server
+	gate *Gate
 )
 
 // GetInstance 获取
-func GetInstance() *Server {
-	return server
+func GetInstance() *Gate {
+	return gate
 }
 
-func NewServer(normal *pkgserver.Normal) *Server {
-	server = &Server{
+func NewGate(normal *pkgserver.Normal) *Gate {
+	gate = &Gate{
 		Normal: normal,
 	}
-	normal.Options.WithDefaultHandler(server.bus.OnEventBus).WithEtcdHandler(server.bus.OnEventEtcd)
-	return server
+	normal.Options.
+		WithDefaultHandler(gate.bus.OnEventBus).
+		WithEtcdHandler(gate.bus.OnEventEtcd).
+		WithTimerEachSecond(&pkgserver.NormalTimerSecond{
+			OnTimerFun: gate.OnTimerEachSecondFun,
+			Arg:        gate,
+		}).
+		WithTimerEachDay(&pkgserver.NormalTimerSecond{
+			OnTimerFun: gate.OnTimerEachDayFun,
+			Arg:        gate,
+		})
+	return gate
 }
 
-type Server struct {
+type Gate struct {
 	*pkgserver.Normal
-	bus         Bus
-	serverTimer ServerTimer
-	router      Router
+	bus    Bus
+	router Router
 }
 
-func (p *Server) OnStart(_ context.Context) (err error) {
-	// 服定时器
-	p.serverTimer.Start()
+func (p *Gate) String() string {
+	return pkgserver.NameGate
+}
+
+func (p *Gate) OnStart(_ context.Context) (err error) {
+	// 定时器-可用负载
+	timerAvailableLoadExpireTimestamp = p.TimeMgr.ShadowTimeSecond()
 	go func() { //启动grpc服务
 		defer func() {
 			if libutil.IsRelease() {
@@ -56,7 +69,7 @@ func (p *Server) OnStart(_ context.Context) (err error) {
 		}
 		p.GrpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(1024 * 1024 * 1024)) //todo menglingchao 设置接受大小
 		protogate.RegisterServiceServer(p.GrpcServer, &APIServer{})
-		p.LogMgr.Tracef("Server is running on %v", addr)
+		p.LogMgr.Tracef("Gate is running on %v", addr)
 		if err = p.GrpcServer.Serve(listen); err != nil {
 			p.LogMgr.Fatalf("Failed to serve: %v", err)
 		}
@@ -65,8 +78,7 @@ func (p *Server) OnStart(_ context.Context) (err error) {
 	return nil
 }
 
-func (p *Server) OnPreStop(_ context.Context) (err error) {
-	p.serverTimer.Stop()
+func (p *Gate) OnPreStop(_ context.Context) (err error) {
 	p.LogMgr.Warn("serverTimer stop")
 	{ // todo menglingchao 关机前处理...
 		p.LogMgr.Warn("grpc Service stop")

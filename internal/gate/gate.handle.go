@@ -10,7 +10,7 @@ import (
 )
 
 // CanHandle 是否可以处理的命令 todo menglingchao
-func (p *Server) CanHandle(messageID uint32) bool {
+func (p *Gate) CanHandle(messageID uint32) bool {
 	// 在这里编写判断逻辑
 	// 判断cmd是否符合自己可以处理的消息类型
 	// 如果符合，返回true；否则，返回false
@@ -19,7 +19,7 @@ func (p *Server) CanHandle(messageID uint32) bool {
 	return false
 }
 
-func (p *Server) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, body []byte) error {
+func (p *Gate) Handle(stream protogate.Service_BidirectionalBinaryDataServer, header *pkgmsg.Header, body []byte) error {
 	p.LogMgr.Trace(pkgproto.CMDMap[header.MessageID], stream, header, body)
 	switch header.MessageID {
 	case protogate.RegisterReqCMD:

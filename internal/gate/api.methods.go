@@ -15,7 +15,7 @@ func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_Bidirection
 	for {
 		request, err := stream.Recv()
 		if err != nil { // 错误处理 todo menglingchao 此处处理可做成一个函数
-			server.LogMgr.Fatal(err, liberror.Link, stream, libruntime.Location())
+			gate.LogMgr.Fatal(err, liberror.Link, stream, libruntime.Location())
 			// 使用 status.FromError 函数获取 gRPC 状态
 			st, ok := status.FromError(err)
 			if ok {
@@ -23,7 +23,7 @@ func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_Bidirection
 				code := st.Code()
 				// 获取错误消息
 				message := st.Message()
-				server.LogMgr.Fatal(code, message, libruntime.Location())
+				gate.LogMgr.Fatal(code, message, libruntime.Location())
 				// 根据错误代码采取不同的处理方式
 				switch code {
 				case codes.Unavailable:
@@ -41,11 +41,11 @@ func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_Bidirection
 				}
 				// 在处理不同类型的错误后，可以根据需要进行其他操作
 			} else {
-				server.LogMgr.Fatal(st, ok, stream, libruntime.Location())
+				gate.LogMgr.Fatal(st, ok, stream, libruntime.Location())
 			}
 			err2 := pkggrpcstream.GetInstance().Del(stream)
 			if err2 != nil {
-				server.LogMgr.Fatal(err, err2, libruntime.Location())
+				gate.LogMgr.Fatal(err, err2, libruntime.Location())
 				return errors.WithMessage(err, err2.Error())
 			}
 			return err
@@ -53,21 +53,21 @@ func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_Bidirection
 		data := request.GetData()
 		//获取数据-二进制
 		if uint32(len(data)) < pkgmsg.GProtoHeadLength {
-			server.LogMgr.Warn(liberror.PacketHeaderLength, libruntime.Location())
+			gate.LogMgr.Warn(liberror.PacketHeaderLength, libruntime.Location())
 			return errors.WithMessage(liberror.PacketHeaderLength, libruntime.Location())
 		}
 		header := &pkgmsg.Header{}
 		header.Unmarshal(data[:pkgmsg.GProtoHeadLength])
-		server.LogMgr.Trace(header.String())
-		if server.CanHandle(header.MessageID) {
-			err = server.Handle(stream, header, data[pkgmsg.GProtoHeadLength:])
+		gate.LogMgr.Trace(header.String())
+		if gate.CanHandle(header.MessageID) {
+			err = gate.Handle(stream, header, data[pkgmsg.GProtoHeadLength:])
 			if err != nil {
-				server.LogMgr.Warn(err, libruntime.Location())
+				gate.LogMgr.Warn(err, libruntime.Location())
 			}
 		} else { //非gate的消息,交给router处理
-			err = server.router.Handle(stream, header, data)
+			err = gate.router.Handle(stream, header, data)
 			if err != nil {
-				server.LogMgr.Warn(err, libruntime.Location())
+				gate.LogMgr.Warn(err, libruntime.Location())
 			}
 		}
 	}

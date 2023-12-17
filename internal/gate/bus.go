@@ -8,7 +8,7 @@ type Bus struct {
 func (p *Bus) OnEventBus(v interface{}) error {
 	switch t := v.(type) {
 	default:
-		server.LogMgr.Errorf("non-existent event:%v %v", v, t)
+		gate.LogMgr.Errorf("non-existent event:%v %v", v, t)
 	}
 	return nil
 }
