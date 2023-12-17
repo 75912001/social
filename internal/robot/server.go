@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
-	robothandler "social/internal/robot/handler"
-	robotsubbench "social/internal/robot/subbench"
 	liblog "social/lib/log"
 	pkgmsg "social/pkg/msg"
 	pkgproto "social/pkg/proto"
@@ -19,7 +17,7 @@ func NewServer(normal *pkgserver.Normal) *Server {
 	s := &Server{
 		Normal: normal,
 	}
-	normal.Options.WithDefaultHandler(robothandler.OnEventDefault).WithEtcdHandler(robothandler.OnEventEtcd).WithSubBench(robotsubbench.GetInstance())
+	//normal.Options.WithDefaultHandler(robothandler.OnEventDefault).WithEtcdHandler(robothandler.OnEventEtcd).WithSubBench(robotsubbench.GetInstance())
 	return s
 }
 
@@ -28,10 +26,10 @@ type Server struct {
 }
 
 func (p *Server) OnStart(ctx context.Context) (err error) {
-	p.Options.WithDefaultHandler(robothandler.OnEventDefault)
+	p.Options.WithDefaultHandler(OnEventDefault)
 
 	// 连接 gRPC 服务器
-	addr := fmt.Sprintf("%v:%v", robotsubbench.GetInstance().Gate.IP, robotsubbench.GetInstance().Gate.Port)
+	addr := fmt.Sprintf("%v:%v", GetInstance().Gate.IP, GetInstance().Gate.Port)
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		liblog.GetInstance().Fatalf("Failed to connect: %v %v", addr, err)
@@ -62,7 +60,7 @@ func (p *Server) OnStart(ctx context.Context) (err error) {
 
 	packet := pkgmsg.Packet{
 		Header: pkgmsg.Header{
-			MessageID: protogate.RegisterReq_CMD,
+			MessageID: protogate.RegisterReqCMD,
 			ResultID:  0,
 		},
 		Message: req,
