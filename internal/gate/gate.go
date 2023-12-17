@@ -17,11 +17,6 @@ var (
 	gate *Gate
 )
 
-// GetInstance 获取
-func GetInstance() *Gate {
-	return gate
-}
-
 func NewGate(normal *pkgserver.Normal) *Gate {
 	gate = &Gate{
 		Normal: normal,
@@ -67,7 +62,7 @@ func (p *Gate) OnStart(_ context.Context) (err error) {
 		if err != nil {
 			p.LogMgr.Fatalf("Failed to listen: %v", err)
 		}
-		p.GrpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(1024 * 1024 * 1024)) //todo menglingchao 设置接受大小
+		p.GrpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(1024 * 1024 * 1024)) // todo menglingchao 设置接受大小
 		protogate.RegisterServiceServer(p.GrpcServer, &APIServer{})
 		p.LogMgr.Tracef("Gate is running on %v", addr)
 		if err = p.GrpcServer.Serve(listen); err != nil {

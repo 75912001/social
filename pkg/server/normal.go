@@ -187,6 +187,7 @@ func (p *Normal) OnInit(ctx context.Context, opts ...*Options) error {
 	if err != nil {
 		return errors.WithMessagef(err, libruntime.Location())
 	}
+	//定时器
 	p.serviceInformationPrintingStart()
 	if p.Options.timerEachSecond != nil {
 		p.Options.timerEachSecond.lastExpireSecond = p.TimeMgr.TimeSecond() + 1

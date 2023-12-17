@@ -92,11 +92,7 @@ func (p *Normal) OnStart(ctx context.Context, opts ...*Options) error {
 	return nil
 }
 
-func (p *Normal) OnRun(_ context.Context) error {
-	return nil
-}
-
-// Exit 退出服务
+// Exit 退出
 func (p *Normal) Exit() {
 	liblog.GetInstance().Warnf("actor exit... %v", p.ID)
 	if p.cancelFunc != nil {
@@ -114,7 +110,7 @@ func (p *Normal) OnPreStop(_ context.Context) error {
 func (p *Normal) OnStop(_ context.Context) error {
 	liblog.GetInstance().Warnf("actor OnStop... %v", p.ID)
 	close(p.mailBox)
-	// 等待 goroutine退出.
+	// 等待 goroutine退出. todo menglingchao 此处阻塞等待mailBox的消息处理完毕
 	p.waitGroup.Wait()
 	liblog.GetInstance().Warnf("actor OnStop done %v", p.ID)
 	return nil
