@@ -11,14 +11,26 @@ type OnDefaultHandler func(v interface{}) error
 // Options contains Options to configure a server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type Options struct {
-	subBench       pkgsubbench.ISubBench
-	defaultHandler OnDefaultHandler // default 处理函数
-	etcdHandler    libetcd.OnFunc   // etcd 处理函数
+	subBench        pkgsubbench.ISubBench
+	defaultHandler  OnDefaultHandler // default 处理函数
+	etcdHandler     libetcd.OnFunc   // etcd 处理函数
+	timerEachSecond *NormalTimerSecond
+	timerEachDay    *NormalTimerSecond
 }
 
 // NewOptions 新的Options
 func NewOptions() *Options {
 	return new(Options)
+}
+
+func (p *Options) WithTimerEachSecond(timerEachSecond *NormalTimerSecond) *Options {
+	p.timerEachSecond = timerEachSecond
+	return p
+}
+
+func (p *Options) WithTimerEachDay(timerEachDay *NormalTimerSecond) *Options {
+	p.timerEachDay = timerEachDay
+	return p
 }
 
 func (p *Options) WithSubBench(subBench pkgsubbench.ISubBench) *Options {
@@ -44,6 +56,12 @@ func mergeOptions(opts ...*Options) *Options {
 	for _, opt := range opts {
 		if opt == nil {
 			continue
+		}
+		if opt.timerEachSecond != nil {
+			so.timerEachSecond = opt.timerEachSecond
+		}
+		if opt.timerEachDay != nil {
+			so.timerEachDay = opt.timerEachDay
 		}
 		if opt.subBench != nil {
 			so.subBench = opt.subBench

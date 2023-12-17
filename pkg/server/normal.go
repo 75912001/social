@@ -187,10 +187,17 @@ func (p *Normal) OnInit(ctx context.Context, opts ...*Options) error {
 	if err != nil {
 		return errors.WithMessagef(err, libruntime.Location())
 	}
-
 	p.serviceInformationPrintingStart()
-	runtime.GC()
+	if p.Options.timerEachSecond != nil {
+		p.Options.timerEachSecond.lastExpireSecond = p.TimeMgr.TimeSecond() + 1
+		p.Options.timerEachSecond.onTimerFunHandle = p.TimerMgr.AddSecond(p.onTimerEachSecond, p.Options.timerEachSecond.Arg, p.Options.timerEachSecond.lastExpireSecond)
+	}
+	if p.Options.timerEachDay != nil {
+		p.Options.timerEachDay.lastExpireSecond = libtime.DayBeginSec(p.TimeMgr.TimeSecond()) + libtime.OneDaySecond
+		p.Options.timerEachDay.onTimerFunHandle = p.TimerMgr.AddSecond(p.onTimerEachDay, p.Options.timerEachDay, p.Options.timerEachDay.lastExpireSecond)
+	}
 
+	runtime.GC()
 	return nil
 }
 
@@ -248,6 +255,12 @@ func (p *Normal) OnStop(_ context.Context) error {
 	// 等待GEventChan处理结束
 	p.busChannelWaitGroup.Wait()
 
+	if p.Options.timerEachSecond != nil {
+		libtimer.DelSecond(p.Options.timerEachSecond.onTimerFunHandle)
+	}
+	if p.Options.timerEachDay != nil {
+		libtimer.DelSecond(p.Options.timerEachDay.onTimerFunHandle)
+	}
 	if p.informationPrintingTimerSecond != nil {
 		libtimer.DelSecond(p.informationPrintingTimerSecond)
 	}
