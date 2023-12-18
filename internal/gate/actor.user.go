@@ -2,40 +2,27 @@ package gate
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	libactor "social/lib/actor"
-	liblog "social/lib/log"
 )
 
-func NewUser(id string, opt *libactor.Options) *User {
+func NewUser(id string) *User {
 	user := &User{}
-	actor := &Actor{}
-	actor.Normal = NewActor(id, opt).Normal
-	user.
-		err := actor.OnStart(context.Background(), opt)
-	if err != nil {
-		liblog.GetInstance().Error(err)
-		return nil
-	}
-	return actor
+	user.Normal = libactor.NewNormal(id, libactor.NewOptions().WithDefaultHandler(user.OnDefaultHandler))
+	return user
 }
 
-func (p *User) DelUser(ctx context.Context) error {
-	DelActor(ctx, p.Actor)
-	p.OnPreStop()
-	return nil
-}
-
+// User 用户
 type User struct {
-	*Actor
+	*libactor.Normal
 	Stream grpc.ServerStream
 }
 
-func (p *User) OnDefaultHandler(v interface{}) error {
-	return nil
+func (p *User) Exit(ctx context.Context) error {
+	//todo menglingchao 退出之前的操作
+	return p.Normal.Exit(ctx)
 }
 
-func (p *User) OnPreStop(_ context.Context) error {
+func (p *User) OnDefaultHandler(v interface{}) error {
 	return nil
 }

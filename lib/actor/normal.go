@@ -6,13 +6,41 @@ import (
 	"runtime/debug"
 	libbench "social/lib/bench"
 	libconsts "social/lib/consts"
-	liberror "social/lib/error"
 	liblog "social/lib/log"
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
 	libutil "social/lib/util"
 	"sync"
 )
+
+func NewNormal(id string, opt *Options) *Normal {
+	normal := &Normal{
+		ID:      id,
+		options: opt,
+	}
+	err := normal.OnStart(context.Background(), opt)
+	if err != nil {
+		liblog.GetInstance().Error(err)
+		return nil
+	}
+	return normal
+}
+
+// Exit 退出
+func (p *Normal) Exit(ctx context.Context) error {
+	liblog.GetInstance().Warnf("actor exit... %v", p.ID)
+	if p.cancelFunc != nil {
+		p.cancelFunc()
+		p.cancelFunc = nil
+	}
+	liblog.GetInstance().Warnf("actor exit done %v", p.ID)
+
+	err := p.OnStop(ctx)
+	if err != nil {
+		return errors.WithMessage(err, "OnStop")
+	}
+	return nil
+}
 
 type Normal struct {
 	ID string
@@ -90,21 +118,6 @@ func (p *Normal) OnStart(ctx context.Context, opts ...*Options) error {
 		p.mailBox = nil
 	}(ctxWithCancel)
 	return nil
-}
-
-// Exit 退出
-func (p *Normal) Exit() {
-	liblog.GetInstance().Warnf("actor exit... %v", p.ID)
-	if p.cancelFunc != nil {
-		p.cancelFunc()
-		p.cancelFunc = nil
-	}
-	liblog.GetInstance().Warnf("actor exit done %v", p.ID)
-}
-
-func (p *Normal) OnPreStop(_ context.Context) error {
-	//todo menglingchao 停止前的处理
-	return liberror.NotImplemented
 }
 
 func (p *Normal) OnStop(_ context.Context) error {
