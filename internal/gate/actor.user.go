@@ -26,3 +26,7 @@ func (p *User) Exit(ctx context.Context) error {
 func (p *User) OnDefaultHandler(v interface{}) error {
 	return nil
 }
+
+type UserMgr struct {
+	userMap map[string]*User // key:id, val:user
+}
