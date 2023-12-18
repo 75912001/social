@@ -123,8 +123,8 @@ func (p *Normal) OnStart(ctx context.Context, opts ...*Options) error {
 func (p *Normal) OnStop(_ context.Context) error {
 	liblog.GetInstance().Warnf("actor OnStop... %v", p.ID)
 	close(p.mailBox)
-	// 等待 goroutine退出. todo menglingchao 此处阻塞等待mailBox的消息处理完毕
-	p.waitGroup.Wait()
+	// 等待 goroutine退出. todo menglingchao 此处 是否需要 阻塞等待mailBox的消息处理完毕
+	// p.waitGroup.Wait()
 	liblog.GetInstance().Warnf("actor OnStop done %v", p.ID)
 	return nil
 }

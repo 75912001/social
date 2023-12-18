@@ -11,7 +11,7 @@ import (
 	interactionserver "social/internal/interaction"
 	notificationserver "social/internal/notification"
 	recommendationserver "social/internal/recommendation"
-	robotserver "social/internal/robot"
+	"social/internal/robot"
 	liblog "social/lib/log"
 	pkgserver "social/pkg/server"
 	"strconv"
@@ -63,7 +63,7 @@ func main() {
 	case pkgserver.NameCleansing:
 		s = &cleansingserver.Server{Normal: normal}
 	case pkgserver.NameRobot:
-		s = robotserver.NewServer(normal)
+		s = robot.NewRobot(normal)
 	default:
 		liblog.PrintErr("service name err", normal.ServiceName)
 		return

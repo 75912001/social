@@ -13,23 +13,31 @@ import (
 	"time"
 )
 
-func NewServer(normal *pkgserver.Normal) *Server {
-	s := &Server{
+var (
+	robot *Robot
+)
+
+func NewRobot(normal *pkgserver.Normal) *Robot {
+	robot = &Robot{
 		Normal: normal,
 	}
-	//normal.Options.WithDefaultHandler(robothandler.OnEventDefault).WithEtcdHandler(robothandler.OnEventEtcd).WithSubBench(robotsubbench.GetInstance())
-	return s
+	normal.Options.
+		WithDefaultHandler(robot.bus.OnEventBus).
+		WithEtcdHandler(robot.bus.OnEventEtcd).WithSubBench(&robot.subBenchMgr)
+	return robot
 }
 
-type Server struct {
+type Robot struct {
 	*pkgserver.Normal
+	bus         Bus
+	subBenchMgr SubBenchMgr
 }
 
-func (p *Server) OnStart(ctx context.Context) (err error) {
+func (p *Robot) OnStart(ctx context.Context) (err error) {
 	p.Options.WithDefaultHandler(OnEventDefault)
 
 	// 连接 gRPC 服务器
-	addr := fmt.Sprintf("%v:%v", GetInstance().Gate.IP, GetInstance().Gate.Port)
+	addr := fmt.Sprintf("%v:%v", p.subBenchMgr.Gate.IP, p.subBenchMgr.Gate.Port)
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		liblog.GetInstance().Fatalf("Failed to connect: %v %v", addr, err)
@@ -96,7 +104,7 @@ func (p *Server) OnStart(ctx context.Context) (err error) {
 	return nil
 }
 
-func (p *Server) OnPreStop(ctx context.Context) (err error) {
+func (p *Robot) OnPreStop(ctx context.Context) (err error) {
 	{ // todo menglingchao 关机前处理...
 		// todo menglingchao 关闭grpc服务 拒绝新连接
 		liblog.GetInstance().Warn("grpc Service stop")

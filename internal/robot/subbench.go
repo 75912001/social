@@ -6,23 +6,9 @@ import (
 	"os"
 	liberror "social/lib/error"
 	libruntime "social/lib/runtime"
-	"sync"
 )
 
-var (
-	instance *mgr
-	once     sync.Once
-)
-
-// GetInstance 获取
-func GetInstance() *mgr {
-	once.Do(func() {
-		instance = new(mgr)
-	})
-	return instance
-}
-
-type mgr struct {
+type SubBenchMgr struct {
 	Gate Gate `json:"gate"`
 }
 
@@ -31,7 +17,7 @@ type Gate struct {
 	Port uint16 `json:"port"`
 }
 
-func (p *mgr) Load(pathFile string) error {
+func (p *SubBenchMgr) Parse(pathFile string) error {
 	if data, err := os.ReadFile(pathFile); err != nil {
 		return errors.WithMessagef(err, "%v %v", pathFile, libruntime.Location())
 	} else {
