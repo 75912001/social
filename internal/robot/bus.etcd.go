@@ -24,7 +24,6 @@ func (p *Bus) OnEventEtcd(key string, value string) error {
 
 	switch msgType {
 	case libetcd.WatchMsgTypeCommand:
-		//todo menglingchao 处理etcd命令事件
 	case libetcd.WatchMsgTypeService:
 		if serviceIDU64, err := strconv.ParseUint(serviceID, 10, 64); err != nil {
 			robot.LogMgr.Fatal(libconsts.Etcd, key, value, serviceID, err)
