@@ -1,0 +1,110 @@
+#账号:
+#e.g.:
+# account:${accountPre}${accountBegin}
+# name:${accountPre}${accountBegin}
+account:
+  #账号前缀
+  accountPre: robot
+  #账号后缀-开始
+  accountBegin: 1000
+  #用户总数
+  totalNum: 1000
+  #在线数量
+  onlineNum: 1000
+
+#基础
+base:
+  #日志路径
+  logAbsPath: D:\workspace\go\src\dawn-server\log
+  #日志级别 0:关闭 1:Fatal 2:Error 3:Warn 4:Info 5:Debug 6:Trace 7:全部打开
+  logLevel: 7
+  #登录地址
+  loginAddr: login-sgtest.youzu.com:3010
+  #战斗版本号, 该字段为空时:不检测版本号
+  battleVersion: Release.Beta.1.0
+  #是否参与战斗
+  isBattle: true
+  #检测机器人上线周期-秒
+  checkInterval: 1
+  #机器人发请求周期-秒
+  messageInterval: 1
+
+#行为
+action:
+  #名称
+  - name: online
+    #描述
+    desc: 上线
+    #是否必须
+    required: true
+    #权重
+    weight: 0
+    #请求消息
+    message:
+      #消息ID
+      - id: 0x0
+        #消息名称
+        name: online
+        #消息描述
+        desc: '上线处理'
+  - name: battle
+    desc: 战斗
+    required: false
+    weight: 10
+    message:
+      - id: 0x80008
+        name: BattleGatewayCreateRoomMsg_CMD
+        desc: '创建房间'
+      - id: 0x80007
+        name: BattleGatewayRoomChooseMissionMsg
+        desc: '选择关卡'
+      - id: 0x60206
+        name: RoomStartMsg_CMD
+        desc: '房间准备开始战斗'
+      - id: 0x6020c
+        name: RoomBattleStartMsg_CMD
+        desc: '房间用户加载完成，开始战斗'
+      - id: 0x60401
+        name: RoomFrameDataMsg_CMD
+        desc: '房间内同步用户数据'
+      - id: 0x60207
+        name: RoomEndMsg_CMD
+        desc: '房间结束'
+      - id: 0x60100
+        name: RoomExitRoomMsg_CMD
+        desc: '退出房间'
+  - name: offline
+    desc: 下线
+    required: false
+    weight: 0
+    message:
+      - id: 0x0
+        name: offline
+        desc: '下线处理'
+  - name: setWeapon
+    desc: 设置武器
+    required: false
+    weight: 0
+    message:
+      - id: 0x50010
+        name: WorldSetPrimaryWeaponMsg_CMD
+        desc: '设置主武器'
+      - id: 0x50011
+        name: WorldSetSecondaryWeaponMsg_CMD
+        desc: '设置副武器'
+  - name: task
+    desc: 任务
+    required: false
+    weight: 0
+    message:
+      - id: 0x52101
+        name: WorldTaskCompleteMsg_CMD
+        desc: '完成任务'
+  - name: statistic
+    desc: 埋点统计
+    required: false
+    weight: 0
+    message:
+      - id: 0x52201
+        name: WorldStatRoomEndMsg_CMD
+        desc: '战斗结束上报埋点'
