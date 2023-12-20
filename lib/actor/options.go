@@ -9,7 +9,7 @@ type OnDefaultHandler func(v interface{}) error
 // Options contains Options to configure instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type Options struct {
-	defaultHandler OnDefaultHandler // default 处理函数
+	onHandler OnDefaultHandler // default 处理函数
 }
 
 // NewOptions 新的Options
@@ -18,7 +18,7 @@ func NewOptions() *Options {
 }
 
 func (p *Options) WithDefaultHandler(defaultHandler OnDefaultHandler) *Options {
-	p.defaultHandler = defaultHandler
+	p.onHandler = defaultHandler
 	return p
 }
 
@@ -31,8 +31,8 @@ func merge(opts ...*Options) *Options {
 		if opt == nil {
 			continue
 		}
-		if opt.defaultHandler != nil {
-			so.defaultHandler = opt.defaultHandler
+		if opt.onHandler != nil {
+			so.onHandler = opt.onHandler
 		}
 	}
 	return so
@@ -40,8 +40,8 @@ func merge(opts ...*Options) *Options {
 
 // 配置
 func configure(opt *Options) error {
-	if opt.defaultHandler == nil {
-		return errors.WithMessage(errors.New("defaultHandler is nil"), "defaultHandler is nil")
+	if opt.onHandler == nil {
+		return errors.WithMessage(errors.New("onHandler is nil"), "onHandler is nil")
 	}
 	return nil
 }

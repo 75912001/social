@@ -11,3 +11,8 @@ message ServiceKey{ //服务key
   string serviceName = 2;//服务名称
   uint32 serviceID = 3;//服务ID
 }
+
+message UserKey{
+  uint32 zoneID = 1;//区域ID
+  uint64 uid = 2;//用户ID
+}

@@ -25,7 +25,7 @@ func (p *Bus) OnEventEtcd(key string, value string) error {
 
 	switch msgType {
 	case libetcd.WatchMsgTypeCommand:
-		//todo menglingchao 处理etcd命令事件
+		// 处理etcd命令事件
 	case libetcd.WatchMsgTypeService:
 		if serviceIDU64, err := strconv.ParseUint(serviceID, 10, 64); err != nil {
 			gate.LogMgr.Fatal(libconsts.Etcd, key, value, serviceID, err)
@@ -35,16 +35,17 @@ func (p *Bus) OnEventEtcd(key string, value string) error {
 		}
 		switch serviceName {
 		// 收到其它 服务 启动、关闭 的信息
+		case pkgserver.NameLogin: //登录服务
 		case pkgserver.NameGate: //网关
 		case pkgserver.NameFriend: //好友
 			if 0 == len(value) {
 				gate.LogMgr.Warnf("%s delete service with key:%s, value empty", libconsts.Etcd, key)
-				//todo menglingchao  将该服务从所在区域中移除
+				//将该服务从所在区域中移除
 				return nil
 			}
 			gate.LogMgr.Warnf("%s service zone_id:%d service_id:%d with key:%s",
 				libconsts.Etcd, zoneIDU32, serviceIDU32, key)
-			//todo menglingchao 查找,添加,链接
+			//查找,添加,链接
 			//有,更新
 			//没有,添加,链接
 		case pkgserver.NameInteraction: //交互

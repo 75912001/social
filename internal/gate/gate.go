@@ -7,6 +7,7 @@ import (
 	"net"
 	"runtime"
 	"runtime/debug"
+	"social/lib/actor"
 	libconsts "social/lib/consts"
 	libutil "social/lib/util"
 	protogate "social/pkg/proto/gate"
@@ -32,13 +33,15 @@ func NewGate(normal *pkgserver.Normal) *Gate {
 			OnTimerFun: gate.OnTimerEachDayFun,
 			Arg:        gate,
 		})
+	gate.userMgr.actorMgr = actor.NewMgr[string]()
 	return gate
 }
 
 type Gate struct {
 	*pkgserver.Normal
-	bus    Bus
-	router Router
+	bus     Bus
+	router  Router
+	userMgr UserMgr
 }
 
 func (p *Gate) String() string {
@@ -74,8 +77,8 @@ func (p *Gate) OnStart(_ context.Context) (err error) {
 }
 
 func (p *Gate) OnPreStop(_ context.Context) (err error) {
-	p.LogMgr.Warn("serverTimer stop")
-	{ // todo menglingchao 关机前处理...
+	p.LogMgr.Warn("OnPreStop stop")
+	{ // 关机前处理...业务逻辑
 		p.LogMgr.Warn("grpc Service stop")
 	}
 	return nil

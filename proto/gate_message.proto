@@ -12,6 +12,7 @@ message User2GateMessageMin//0x1000#user <-> gate 之间-用户消息-最小值
 message RegisterReq//0x1001#注册请求 user->gate
 {
   ServiceKey serviceKey = 1;
+  string token = 2;//从login获取的token,用来验证身份
 }
 message RegisterRes//0x1002#注册响应 gate->user
 {

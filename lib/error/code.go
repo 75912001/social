@@ -102,6 +102,8 @@ var (
 	NotImplemented = CreateError(0xf02e, "NotImplemented", "not implemented")
 	// PacketHeaderLength 数据包头长度
 	PacketHeaderLength = CreateError(0xf02f, "PacketHeaderLength", "packet header length error")
+	// ChannelClosed 通道 已关闭
+	ChannelClosed = CreateError(0xf030, "ChannelClosed", "channel closed")
 	// Unknown 未知
 	Unknown = CreateError(0xffff, "Unknown", "unknown")
 	// 0xffff
