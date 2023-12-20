@@ -1,9 +1,13 @@
 package gate
 
 import (
+	"encoding/json"
+	"github.com/pkg/errors"
+	libbench "social/lib/bench"
 	libconsts "social/lib/consts"
 	libetcd "social/lib/etcd"
 	libruntime "social/lib/runtime"
+	pkgcommon "social/pkg/common"
 	pkgserver "social/pkg/server"
 	"strconv"
 )
@@ -38,16 +42,30 @@ func (p *Bus) OnEventEtcd(key string, value string) error {
 		case pkgserver.NameLogin: //登录服务
 		case pkgserver.NameGate: //网关
 		case pkgserver.NameFriend: //好友
-			if 0 == len(value) {
+			serverKey := pkgcommon.GenerateServiceKey(zoneIDU32, serviceName, serviceIDU32)
+			if 0 == len(value) { //将该服务从所在区域中移除
 				gate.LogMgr.Warnf("%s delete service with key:%s, value empty", libconsts.Etcd, key)
-				//将该服务从所在区域中移除
+				gate.friendMgr.Del(serverKey)
 				return nil
 			}
-			gate.LogMgr.Warnf("%s service zone_id:%d service_id:%d with key:%s",
-				libconsts.Etcd, zoneIDU32, serviceIDU32, key)
-			//查找,添加,链接
-			//有,更新
-			//没有,添加,链接
+			var etcdValueJson libbench.EtcdValueJson
+			if err := json.Unmarshal([]byte(value), &etcdValueJson); err != nil {
+				return errors.WithMessagef(err, "%v bench EtcdValueJson json Unmarshal %v", libconsts.Etcd, value)
+			}
+			//查找
+			friend, ok := gate.friendMgr.Find(serverKey)
+			if ok { //有,更新
+				friend.EtcdValueJson = etcdValueJson
+				return nil
+			}
+			//没有,链接,添加
+			... 链接 ...
+
+			gate.friendMgr.Add(serverKey, &Friend{
+				key:           serverKey,
+				Stream:        nil,
+				EtcdValueJson: libbench.EtcdValueJson{},
+			})
 		case pkgserver.NameInteraction: //交互
 		case pkgserver.NameNotification: //通知
 		case pkgserver.NameBlog: //博客

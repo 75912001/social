@@ -1,11 +1,11 @@
 package gate
 
 import (
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	liberror "social/lib/error"
 	libruntime "social/lib/runtime"
+	pkgcommon "social/pkg/common"
 	pkgmsg "social/pkg/msg"
 	pkgproto "social/pkg/proto"
 	protogate "social/pkg/proto/gate"
@@ -35,7 +35,7 @@ func (p *Gate) Handle(stream protogate.Service_BidirectionalBinaryDataServer, he
 		//todo 从redis中验证token...
 
 		// 处理 RegisterReq
-		key := fmt.Sprintf("%v.%v.%v", req.ServiceKey.ZoneID, req.ServiceKey.ServiceName, req.ServiceKey.ServiceID)
+		key := pkgcommon.GenerateServiceKey(req.ServiceKey.ZoneID, req.ServiceKey.ServiceName, req.ServiceKey.ServiceID)
 		user := p.userMgr.Find(key)
 		if user != nil { //注册过,返回错误码
 			err = send2User(stream, protogate.RegisterResCMD, liberror.Duplicate.Code, &protogate.RegisterRes{})

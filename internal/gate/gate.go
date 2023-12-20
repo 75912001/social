@@ -34,14 +34,16 @@ func NewGate(normal *pkgserver.Normal) *Gate {
 			Arg:        gate,
 		})
 	gate.userMgr.actorMgr = actor.NewMgr[string]()
+	gate.friendMgr.Mgr = libutil.NewMgr[string, *Friend]()
 	return gate
 }
 
 type Gate struct {
 	*pkgserver.Normal
-	bus     Bus
-	router  Router
-	userMgr UserMgr
+	bus       Bus
+	router    Router
+	userMgr   UserMgr
+	friendMgr FriendMgr
 }
 
 func (p *Gate) String() string {
