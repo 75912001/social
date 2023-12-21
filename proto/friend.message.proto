@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+option go_package = "social/pkg/proto/friend";
+
+import "friend.struct.proto";
+import "friend.enum.proto";
+
+//friend 处理的消息[0x2000,0x2fff]
+
+message MessageMin//0x2000#消息-最小值
+{}
+
+message UpdateFriendMaxReq//0x2010#修改好友数量最大值
+{
+  uint64 uid = 1;//用户ID
+  uint32 friendMax = 2;//修改后的最大值
+}
+message UpdateFriendMaxRes//0x2011#修改好友数量最大值响应
+{
+}
+
+message GetFriendListReq//0x2020#获取好友列表请求
+{
+  uint64 uid = 1;//用户ID
+}
+message GetFriendListRes//0x2021#获取好友列表响应
+{
+  repeated FriendData friendList = 1;//好友列表
+}
+
+message ApplyFriendReq//0x2030#申请成为好友请求
+{
+  uint64 uid = 1;//用户ID
+  uint64 targetUid = 2;//目标用户id
+}
+message ApplyFriendRes//0x2031#申请成为好友响应
+{
+}
+
+message AgreeApplyFriendReq//0x2040#接受申请好友
+{
+  uint64 uid = 1;//用户ID
+  uint64 requesterUid = 2;//申请者的UID
+}
+
+message AgreeApplyFriendRes//0x2041#接受申请好友响应
+{
+  uint64 requesterUid = 1;//申请者的UID
+}
+
+message RejectApplyFriendReq//0x2050#拒绝申请好友请求
+{
+  uint64 uid = 1;//用户id
+  uint64 requesterUid = 2;//申请者的UID
+}
+message  RejectApplyFriendRes//0x2051#拒绝申请好友响应
+{
+  uint64 requesterUid = 1;//申请者的UID
+}
+
+message RemoveFriendReq//0x2060#移除好友请求
+{
+  uint64 uid = 1;//用户id
+  uint64 friendUid = 2;//好友的UID
+}
+message  RemoveFriendRes//0x2061#移除好友响应
+{
+  uint64 friendUid = 1;//好友的UID
+}
+
+message UpdateFriendRemarkReq//0x2070#修改好友备注请求
+{
+  uint64 uid = 1;//用户id
+  uint64 friendUid = 2;//好友的UID
+  string remark = 3;//好友的备注
+}
+message  UpdateFriendRemarkRes//0x2071#修改好友备注响应
+{
+}
+
+message UpdateFriendRelationReq//0x2080#改变好友的关系值请求
+{
+  uint64 uid = 1;//用户id
+  uint64 friendUid = 2;//好友的UID
+  uint32 relationshipValue = 3;//关系值
+}
+message  UpdateFriendRelationRes//0x2081#改变好友的关系值响应
+{
+}
+
+message AddUserToBlackListReq//0x2090#将用户加入黑名单请求
+{
+  uint64 uid = 1;//用户id
+  uint64 friendUid = 2;//好友的UID
+}
+message  AddUserToBlackListRes//0x2091#将用户加入黑名单响应
+{
+}
+
+message RemoveUserFromBlackListReq//0x20a0#将用户从黑名单中移除请求
+{
+  uint64 uid = 1;//用户id
+  uint64 blacklistUid = 2;//黑名单的UID
+}
+message  RemoveUserFromBlackListRes//0x20a1#将用户从黑名单中移除响应
+{}
+
+message GetUserStatusReq//0x20b0#获取用户状态请求
+{
+  repeated uint64 uidList = 1;//用户id数组
+}
+
+message GetUserStatusRes//0x20b1#获取用户状态响应
+{
+  repeated  FriendState friendState = 1;//多用户状态
+}
+
+message UpdateUserStatusReq//0x20c0#改变状态请求
+{
+  uint64 uid = 1;//用户id
+  UserState userState = 2;//用户状态
+}
+message  UpdateUserStatusRes//0x20c1#改变状态响应
+{
+}
+
+message UpdateUserLocationReq//0x20d0#改变经纬值请求
+{
+  uint64 uid = 1;//用户id
+  double longitude = 2;//经度
+  double latitude = 3;//纬度
+}
+message  UpdateUserLocationRes//0x20d1#改变经纬值响应
+{}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+message MessageMax//0x2fff#消息-最大值
+{}

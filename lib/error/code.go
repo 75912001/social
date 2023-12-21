@@ -104,6 +104,8 @@ var (
 	PacketHeaderLength = CreateError(0xf02f, "PacketHeaderLength", "packet header length error")
 	// ChannelClosed 通道 已关闭
 	ChannelClosed = CreateError(0xf030, "ChannelClosed", "channel closed")
+	// Unregistered 未注册
+	Unregistered = CreateError(0xf031, "Unregistered", "unregistered")
 	// Unknown 未知
 	Unknown = CreateError(0xffff, "Unknown", "unknown")
 	// 0xffff

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option go_package = "social/pkg/proto/friend";
+
+enum RelationshipType
+{
+  RelationshipTypeNone =   0;//无
+  LOVER = 1001;            // 恋人
+  BUDDY = 2001;            // 死党
+  BEST_FRIEND = 3001;      // 闺蜜
+  BROTHER = 4001;          // 兄弟
+  SISTER = 5001;           // 姐妹
+  MENTOR = 10001;          // 师徒 - 我方角色 - 师傅
+  APPRENTICE = 10002;      // 师徒 - 我方角色 - 徒弟
+  ELDER_SISTER = 20001;    // 姐弟 - 我方角色 - 姐姐
+  YOUNGER_BROTHER = 20002; // 姐弟 - 我方角色 - 弟弟
+  ELDER_BROTHER = 30001;   // 兄妹 - 我方角色 - 兄
+  YOUNGER_SISTER = 30002;  // 兄妹 - 我方角色 - 妹
+}
+
+enum RelationshipStatus {
+  RelationshipStatusNone =   0;//无
+  PENDING = 100;    // 申请中
+  ACCEPTED = 200;   // 已接受
+}
+
+enum UserState
+{
+  //UserStateNone = 0;//无
+  Offline = 0;//离线
+  Online = 1;  //在线
+  Playing = 2;//游戏中
+}

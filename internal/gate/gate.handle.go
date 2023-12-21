@@ -15,7 +15,7 @@ import (
 // 判断cmd是否符合自己可以处理的消息类型
 // 如果符合，返回true；否则，返回false
 func (p *Gate) CanHandle(messageID uint32) bool {
-	if protogate.User2GateMessageMinCMD < messageID && messageID < protogate.User2GateMessageMaxCMD { //gate的消息
+	if protogate.MessageMinCMD < messageID && messageID < protogate.MessageMaxCMD { //gate的消息
 		return true
 	}
 	return false

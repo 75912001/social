@@ -1,22 +1,25 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 )
 
 func main() {
-	WithStack()
-}
+	{
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("router-key", "client"))
 
-// todo menglingchao 可以用于关键信息记录
-func WithStack() {
-	// 创建一个基本错误
-	baseError := errors.New("This is a basic error")
+		// 从上下文中获取路由信息
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			fmt.Println("")
+		}
+		routerKey := md.Get("router-key")
+		fmt.Printf("Router Key: %v\n", routerKey)
 
-	// 使用 WithStack 将调用栈信息添加到错误中
-	errorWithStack := errors.WithStack(baseError)
-
-	// 打印错误信息（包括调用栈信息）
-	fmt.Printf("%+v\n", errorWithStack)
+		// 在响应中添加路由信息
+		//routerKey = append(routerKey, "server") // 这里只是一个简单的演示，实际应用中需要更复杂的逻辑
+		//stream.Send(&HelloReply{Message: fmt.Sprintf("Hello, %s!", msg.GetBody()), RouterKey: routerKey})
+	}
 }

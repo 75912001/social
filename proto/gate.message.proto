@@ -6,7 +6,7 @@ import "struct.proto";
 
 //user <-> gate 之间-用户消息[0x1000,0x1fff]
 
-message User2GateMessageMin//0x1000#user <-> gate 之间-用户消息-最小值
+message MessageMin//0x1000#消息-最小值
 {}
 
 message RegisterReq//0x1001#注册请求 user->gate
@@ -25,5 +25,5 @@ message LogoutRes//0x1004#注销响应 gate->user
 {
 }
 
-message User2GateMessageMax//0x1fff#user <-> gate 之间-用户消息-最大值
+message MessageMax//0x1fff#消息-最大值
 {}

@@ -53,7 +53,7 @@ func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_Bidirection
 		data := request.GetData()
 		//获取数据-二进制
 		if uint32(len(data)) < pkgmsg.GProtoHeadLength {
-			gate.LogMgr.Warn(liberror.PacketHeaderLength, libruntime.Location())
+			gate.LogMgr.Error(liberror.PacketHeaderLength, libruntime.Location())
 			return errors.WithMessage(liberror.PacketHeaderLength, libruntime.Location())
 		}
 		header := &pkgmsg.Header{}
@@ -64,11 +64,17 @@ func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_Bidirection
 			if err != nil {
 				gate.LogMgr.Warn(err, libruntime.Location())
 			}
-		} else { //非gate的消息,交给router处理
-			err = gate.router.Handle(stream, header, data)
-			if err != nil {
-				gate.LogMgr.Warn(err, libruntime.Location())
-			}
+			continue
+		}
+		//非gate的消息,交给router处理
+		user := gate.userMgr.FindByStream(stream)
+		if user == nil { //未注册
+			gate.LogMgr.Warn(liberror.Unregistered, libruntime.Location())
+			return errors.WithMessage(liberror.Unregistered, "user not registered")
+		}
+		err = gate.router.Handle(user.key, stream, header, data)
+		if err != nil {
+			gate.LogMgr.Warn(err, libruntime.Location())
 		}
 	}
 	//return nil
