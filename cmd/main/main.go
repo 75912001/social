@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	blogserver "social/internal/blog"
 	cleansingserver "social/internal/cleansing"
-	friendserver "social/internal/friend"
+	"social/internal/friend"
 	"social/internal/gate"
 	interactionserver "social/internal/interaction"
 	notificationserver "social/internal/notification"
@@ -51,7 +51,7 @@ func main() {
 	case pkgserver.NameGate:
 		s = gate.NewGate(normal)
 	case pkgserver.NameFriend:
-		s = &friendserver.Server{Normal: normal}
+		s = friend.NewFriend(normal)
 	case pkgserver.NameInteraction:
 		s = &interactionserver.Server{Normal: normal}
 	case pkgserver.NameNotification:

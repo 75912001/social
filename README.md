@@ -28,6 +28,8 @@
     go get go.etcd.io/etcd/client/v3
     go get github.com/google/uuid
     *go get github.com/agiledragon/gomonkey
+    go get go.mongodb.org/mongo-driver/mongo
+    #go get go.mongodb.org/mongo-driver@latest
 
 
 ## 使用以下命令安装Go的协议编译器插件
