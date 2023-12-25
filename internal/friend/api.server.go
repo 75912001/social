@@ -5,5 +5,5 @@ import (
 )
 
 type APIServer struct {
-	protofriend.UnimplementedServiceServer
+	protofriend.UnimplementedFriendServiceServer
 }

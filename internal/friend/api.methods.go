@@ -12,7 +12,7 @@ import (
 	protofriend "social/pkg/proto/friend"
 )
 
-func (s *APIServer) BidirectionalBinaryData(stream protofriend.Service_BidirectionalBinaryDataServer) error {
+func (s *APIServer) BidirectionalBinaryData(stream protofriend.FriendService_BidirectionalBinaryDataServer) error {
 	for {
 		request, err := stream.Recv()
 		if err != nil { // 错误处理 todo menglingchao 此处处理可做成一个函数

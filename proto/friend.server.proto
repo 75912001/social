@@ -4,6 +4,6 @@ option go_package = "social/pkg/proto/friend";
 
 import "struct.proto";
 
-service Service {
+service FriendService {
   rpc BidirectionalBinaryData(stream BinaryData) returns (stream BinaryData);
 }

@@ -9,7 +9,7 @@ import (
 	protogate "social/pkg/proto/gate"
 )
 
-func send2User(stream protogate.Service_BidirectionalBinaryDataServer, cmd uint32, resultID uint32, pb proto.Message) error {
+func send2User(stream protogate.GateService_BidirectionalBinaryDataServer, cmd uint32, resultID uint32, pb proto.Message) error {
 	var err error
 	res := pkgmsg.NewPacket(cmd, resultID, pb)
 	sendData := pkgproto.BinaryData{}

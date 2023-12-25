@@ -11,14 +11,14 @@ type FriendMgr struct {
 
 // 获取一个可用的服务
 func (p *FriendMgr) getAvailable() *Friend {
-	todo
-
+	//todo
+	return nil
 }
 
 // Send 发送
-func (p *FriendMgr) Send(ctx context.Context, ) error {
-	todo
-	var friend * Friend
-	friend.Stream.
+func (p *FriendMgr) Send(ctx context.Context) error {
+	//todo
+	//var friend * Friend
+	//friend.Stream.
 	return nil
 }

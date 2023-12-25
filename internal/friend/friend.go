@@ -95,7 +95,7 @@ func (p *Friend) OnStart(ctx context.Context) (err error) {
 			p.LogMgr.Fatalf("Failed to listen: %v", err)
 		}
 		p.GrpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(1024 * 1024 * 1024)) // todo menglingchao 设置接受大小
-		protofriend.RegisterServiceServer(p.GrpcServer, &APIServer{})
+		protofriend.RegisterFriendServiceServer(p.GrpcServer, &APIServer{})
 		p.LogMgr.Tracef("%v is running on %v", p.String(), addr)
 		if err = p.GrpcServer.Serve(listen); err != nil {
 			p.LogMgr.Fatalf("Failed to serve: %v", err)

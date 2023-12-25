@@ -8,12 +8,12 @@ message FriendData{//好友数据
   uint64 friendUid = 1;//好友的UID
   uint32 friendshipTimestamp = 2;//好友关系建立时间
   string remark = 3;//备注
-  RelationshipType relationshipType = 4;//关系类型
+  FriendRelationshipType relationshipType = 4;//关系类型
   uint32  relationshipValue = 5;//关系值
-  RelationshipStatus relationshipStatus = 6;//关系状态
+  FriendRelationshipStatus relationshipStatus = 6;//关系状态
 }
 
 message FriendState{
   uint64 uid = 1;//用户id
-  UserState userState = 2;//用户状态
+  FriendUserState userState = 2;//用户状态
 }

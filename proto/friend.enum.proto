@@ -2,9 +2,9 @@ syntax = "proto3";
 
 option go_package = "social/pkg/proto/friend";
 
-enum RelationshipType
+enum FriendRelationshipType
 {
-  RelationshipTypeNone =   0;//无
+  FriendRelationshipTypeNone =   0;//无
   LOVER = 1001;            // 恋人
   BUDDY = 2001;            // 死党
   BEST_FRIEND = 3001;      // 闺蜜
@@ -18,13 +18,13 @@ enum RelationshipType
   YOUNGER_SISTER = 30002;  // 兄妹 - 我方角色 - 妹
 }
 
-enum RelationshipStatus {
+enum FriendRelationshipStatus {
   RelationshipStatusNone =   0;//无
   PENDING = 100;    // 申请中
   ACCEPTED = 200;   // 已接受
 }
 
-enum UserState
+enum FriendUserState
 {
   //UserStateNone = 0;//无
   Offline = 0;//离线

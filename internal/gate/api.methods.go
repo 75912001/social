@@ -11,7 +11,7 @@ import (
 	protogate "social/pkg/proto/gate"
 )
 
-func (s *APIServer) BidirectionalBinaryData(stream protogate.Service_BidirectionalBinaryDataServer) error {
+func (s *APIServer) BidirectionalBinaryData(stream protogate.GateService_BidirectionalBinaryDataServer) error {
 	for {
 		request, err := stream.Recv()
 		if err != nil { // 错误处理 todo menglingchao 此处处理可做成一个函数

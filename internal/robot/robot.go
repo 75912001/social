@@ -50,7 +50,7 @@ func (p *Robot) OnStart(ctx context.Context) (err error) {
 		}
 	}()
 
-	client := protogate.NewServiceClient(conn)
+	client := protogate.NewGateServiceClient(conn)
 	// 创建双向流
 	stream, err := client.BidirectionalBinaryData(ctx)
 	if err != nil {
@@ -58,7 +58,7 @@ func (p *Robot) OnStart(ctx context.Context) (err error) {
 		return err
 	}
 	// 发送请求
-	req := &protogate.RegisterReq{
+	req := &protogate.GateRegisterReq{
 		ServiceKey: &pkgproto.ServiceKey{
 			ZoneID:      p.ZoneID,
 			ServiceName: p.ServiceName,
@@ -68,7 +68,7 @@ func (p *Robot) OnStart(ctx context.Context) (err error) {
 
 	packet := pkgmsg.Packet{
 		Header: pkgmsg.Header{
-			MessageID: protogate.RegisterReqCMD,
+			MessageID: protogate.GateRegisterReqCMD,
 			ResultID:  0,
 		},
 		Message: req,

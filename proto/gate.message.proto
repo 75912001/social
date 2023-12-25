@@ -6,24 +6,26 @@ import "struct.proto";
 
 //user <-> gate 之间-用户消息[0x1000,0x1fff]
 
-message MessageMin//0x1000#消息-最小值
-{}
+message GateMessageMin//0x1000#消息-最小值
+{
+}
 
-message RegisterReq//0x1001#注册请求 user->gate
+message GateRegisterReq//0x1001#注册请求 user->gate
 {
   ServiceKey serviceKey = 1;
   string token = 2;//从login获取的token,用来验证身份
 }
-message RegisterRes//0x1002#注册响应 gate->user
+message GateRegisterRes//0x1002#注册响应 gate->user
 {
 }
 
-message LogoutReq//0x1003#注销请求 user->gate
+message GateLogoutReq//0x1003#注销请求 user->gate
 {
 }
-message LogoutRes//0x1004#注销响应 gate->user
+message GateLogoutRes//0x1004#注销响应 gate->user
 {
 }
 
-message MessageMax//0x1fff#消息-最大值
-{}
+message GateMessageMax//0x1fff#消息-最大值
+{
+}
