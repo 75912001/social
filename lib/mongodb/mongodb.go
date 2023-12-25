@@ -6,10 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 	liblog "social/lib/log"
 	libruntime "social/lib/runtime"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -19,26 +17,26 @@ const (
 	StatusAbnormal uint32 = 1 // 异常状态
 )
 
-var (
-	instance *Mgr
-	once     sync.Once
-)
-
-// GetInstance 获取
-func GetInstance() *Mgr {
-	once.Do(func() {
-		instance = new(Mgr)
-	})
-	return instance
-}
-
-// IsEnable 是否 开启
-func IsEnable() bool {
-	if instance == nil {
-		return false
-	}
-	return GetInstance().client != nil
-}
+//var (
+//	instance *Mgr
+//	once     sync.Once
+//)
+//
+//// GetInstance 获取
+//func GetInstance() *Mgr {
+//	once.Do(func() {
+//		instance = new(Mgr)
+//	})
+//	return instance
+//}
+//
+//// IsEnable 是否 开启
+//func IsEnable() bool {
+//	if instance == nil {
+//		return false
+//	}
+//	return GetInstance().client != nil
+//}
 
 type Mgr struct {
 	options *Options
@@ -51,7 +49,7 @@ type Mgr struct {
 
 // Connect 连接
 func (p *Mgr) Connect(ctx context.Context, opts ...*Options) error {
-	p.options = mergeOptions(opts...)
+	p.options = merge(opts...)
 	if err := configure(p.options); err != nil {
 		return errors.WithMessagef(err, "%v %v", ErrorKeyConnectFailure, libruntime.Location())
 	}
@@ -88,7 +86,8 @@ func (p *Mgr) EnableSharding(ctx context.Context, dbName string) error {
 	}()
 	if _, err := p.client.Database("admin").RunCommand(
 		c,
-		bsonx.Doc{{"enableSharding", bsonx.String(dbName)}},
+		bson.D{{"enableSharding", dbName}},
+		//bsonx.Doc{{"enableSharding", bsonx.String(dbName)}},
 	).DecodeBytes(); err != nil {
 		return errors.WithMessagef(err, "%v %v", ErrorKeyOperateFailure, libruntime.Location())
 	}

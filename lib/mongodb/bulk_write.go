@@ -2,12 +2,11 @@ package mongodb
 
 import (
 	"context"
-	xrlog "dawn-server/impl/xr/lib/log"
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	liblog "social/lib/log"
+	"time"
 )
 
 // CreateBulkWriteModel FunctionArg转换为BulkWrite的model
@@ -69,7 +68,7 @@ func CreateBulkWriteModel(funcArg *FunctionArg) mongo.WriteModel {
 	//	dmm.SetFilter(funcArg.arg[3])
 	//	return dmm
 	default:
-		xrlog.PrintErr(ErrorKeyOperateFailure)
+		liblog.PrintErr(ErrorKeyOperateFailure)
 	}
 	return nil
 }
@@ -109,7 +108,7 @@ func CreateFunctionArg(collectionName string, collection *mongo.Collection, mode
 	//case *mongo.DeleteOneModel, *mongo.DeleteManyModel:
 	//	return nil
 	default:
-		xrlog.PrintErr(ErrorKeyOperateFailure)
+		liblog.PrintErr(ErrorKeyOperateFailure)
 		return nil
 	}
 

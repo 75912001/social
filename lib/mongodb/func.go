@@ -1,8 +1,8 @@
 package mongodb
 
 import (
-	xrfunc_mgr "dawn-server/impl/xr/lib/func_mgr"
-	xrlog "dawn-server/impl/xr/lib/log"
+	libfuncmgr "social/lib/func_mgr"
+	liblog "social/lib/log"
 	"time"
 )
 
@@ -11,7 +11,7 @@ const FuncIDUpdateMany uint32 = 0x302
 
 // FunctionArg 函数,参数
 type FunctionArg struct {
-	function       xrfunc_mgr.Function
+	function       libfuncmgr.Function
 	funcID         uint32
 	collectionName string
 
@@ -39,6 +39,7 @@ func (p *FunctionArg) AppendArg(i interface{}) {
 }
 
 // NewFunctionArg 构造新的FunctionArg
+//
 //	参数:
 //		arg:
 //			0:context.Context
@@ -46,7 +47,7 @@ func (p *FunctionArg) AppendArg(i interface{}) {
 //			2:time.Duration
 //			...
 //			参考 InsertOne, UpdateOne, UpdateMany
-func NewFunctionArg(fun xrfunc_mgr.Function, funcID uint32, collectionName string, arg ...interface{}) *FunctionArg {
+func NewFunctionArg(fun libfuncmgr.Function, funcID uint32, collectionName string, arg ...interface{}) *FunctionArg {
 	f := &FunctionArg{
 		function:       fun,
 		funcID:         funcID,
@@ -56,11 +57,11 @@ func NewFunctionArg(fun xrfunc_mgr.Function, funcID uint32, collectionName strin
 	return f
 }
 
-//	Invoke 调用函数
+// Invoke 调用函数
 func (p *FunctionArg) Invoke() (interface{}, error) {
 	i, err := p.function(p.arg...)
 	if err != nil {
-		xrlog.PrintfErr("%v %v %v %v %v %v", ErrorKeyOperateFailure, err, p.funcID, p.function, p.collectionName, p.arg)
+		liblog.PrintfErr("%v %v %v %v %v %v", ErrorKeyOperateFailure, err, p.funcID, p.function, p.collectionName, p.arg)
 	}
 	return i, err
 }

@@ -3,13 +3,18 @@ package friend
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"net"
 	"runtime"
 	"runtime/debug"
 	"social/lib/actor"
 	libconsts "social/lib/consts"
+	libmongodb "social/lib/mongodb"
+	libruntime "social/lib/runtime"
 	libutil "social/lib/util"
+	pkgmdb "social/pkg/mdb"
+	pkgmdbfriend "social/pkg/mdb/friend"
 	protofriend "social/pkg/proto/friend"
 	pkgserver "social/pkg/server"
 )
@@ -20,7 +25,8 @@ var (
 
 func NewFriend(normal *pkgserver.Normal) *Friend {
 	app = &Friend{
-		Normal: normal,
+		Normal:     normal,
+		mongodbMgr: new(libmongodb.Mgr),
 	}
 	app.bus.Normal = normal
 	normal.Options.
@@ -33,15 +39,17 @@ func NewFriend(normal *pkgserver.Normal) *Friend {
 		WithTimerEachDay(&pkgserver.NormalTimerSecond{
 			OnTimerFun: app.OnTimerEachDayFun,
 			Arg:        app,
-		})
+		}).WithSubBench(&app.subBenchMgr)
 	app.gateMgr.actorMgr = actor.NewMgr[string]()
 	return app
 }
 
 type Friend struct {
 	*pkgserver.Normal
-	bus     Bus
-	gateMgr UserMgr
+	subBenchMgr subBenchMgr
+	bus         Bus
+	gateMgr     UserMgr
+	mongodbMgr  *libmongodb.Mgr
 }
 
 func (p *Friend) String() string {
@@ -51,8 +59,27 @@ func (p *Friend) String() string {
 func (p *Friend) OnStart(ctx context.Context) (err error) {
 	// 定时器-可用负载
 	timerAvailableLoadExpireTimestamp = p.TimeMgr.ShadowTimeSecond()
-	... 链接 mongodb
-	... 链接 redis
+	// 连接mongodb数据库
+	if err := p.mongodbMgr.Connect(context.TODO(),
+		libmongodb.NewOptions().
+			WithAddrs(p.subBenchMgr.ZoneMongoDB.Addrs).
+			WithUserName(p.subBenchMgr.ZoneMongoDB.User).
+			WithPW(p.subBenchMgr.ZoneMongoDB.Password).
+			WithDBName(p.subBenchMgr.ZoneMongoDB.DBName).
+			WithMaxPoolSize(p.subBenchMgr.ZoneMongoDB.MaxPoolSize).
+			WithMinPoolSize(p.subBenchMgr.ZoneMongoDB.MinPoolSize).
+			WithTimeoutDuration(p.subBenchMgr.ZoneMongoDB.TimeoutDuration).
+			WithMaxConnIdleTime(p.subBenchMgr.ZoneMongoDB.MaxConnIdleTime).
+			WithMaxConnecting(p.subBenchMgr.ZoneMongoDB.MaxConnecting),
+	); err != nil {
+		return errors.WithMessagef(err, "%v %v", p.subBenchMgr.ZoneMongoDB, libruntime.Location())
+	} else {
+		p.mongodbMgr.SwitchedDatabase(pkgmdb.GenDBName(p.Normal.ZoneID, *p.subBenchMgr.ZoneMongoDB.DBName))
+		pkgmdbfriend.Collection = p.mongodbMgr.SwitchedCollection(pkgmdbfriend.CollectionName)
+	}
+
+	// TODO ... 链接 redis
+	// ...
 	go func() { //启动grpc服务
 		defer func() {
 			if libutil.IsRelease() {

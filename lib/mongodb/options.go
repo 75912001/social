@@ -46,47 +46,47 @@ func NewOptions() *Options {
 	return new(Options)
 }
 
-func (p *Options) SetAddrs(addrs []string) *Options {
+func (p *Options) WithAddrs(addrs []string) *Options {
 	p.addrs = append(p.addrs, addrs...)
 	return p
 }
 
-func (p *Options) SetUserName(userName string) *Options {
+func (p *Options) WithUserName(userName string) *Options {
 	p.userName = &userName
 	return p
 }
 
-func (p *Options) SetPW(pw string) *Options {
+func (p *Options) WithPW(pw string) *Options {
 	p.pw = &pw
 	return p
 }
 
-func (p *Options) SetDBName(dbName *string) *Options {
+func (p *Options) WithDBName(dbName *string) *Options {
 	p.dbName = dbName
 	return p
 }
 
-func (p *Options) SetMinPoolSize(minPoolSize *uint64) *Options {
+func (p *Options) WithMinPoolSize(minPoolSize *uint64) *Options {
 	p.minPoolSize = minPoolSize
 	return p
 }
 
-func (p *Options) SetMaxPoolSize(maxPoolSize *uint64) *Options {
+func (p *Options) WithMaxPoolSize(maxPoolSize *uint64) *Options {
 	p.maxPoolSize = maxPoolSize
 	return p
 }
 
-func (p *Options) SetTimeoutDuration(timeoutDuration *time.Duration) *Options {
+func (p *Options) WithTimeoutDuration(timeoutDuration *time.Duration) *Options {
 	p.timeoutDuration = timeoutDuration
 	return p
 }
 
-func (p *Options) SetMaxConnIdleTime(maxConnIdleTime *time.Duration) *Options {
+func (p *Options) WithMaxConnIdleTime(maxConnIdleTime *time.Duration) *Options {
 	p.maxConnIdleTime = maxConnIdleTime
 	return p
 }
 
-func (p *Options) SetMaxConnecting(maxConnecting *uint64) *Options {
+func (p *Options) WithMaxConnecting(maxConnecting *uint64) *Options {
 	p.maxConnecting = maxConnecting
 	return p
 }
@@ -108,10 +108,10 @@ func (p *Options) genURI() string {
 	return uri
 }
 
-// mergeOptions combines the given *Options into a single *Options in a last one wins fashion.
+// merge combines the given *Options into a single *Options in a last one wins fashion.
 // The specified options are merged with the existing options on the server, with the specified options taking
 // precedence.
-func mergeOptions(opts ...*Options) *Options {
+func merge(opts ...*Options) *Options {
 	newOptions := NewOptions()
 	for _, opt := range opts {
 		if opt == nil {
@@ -119,7 +119,7 @@ func mergeOptions(opts ...*Options) *Options {
 		}
 
 		if opt.addrs != nil {
-			newOptions.SetAddrs(opt.addrs)
+			newOptions.WithAddrs(opt.addrs)
 		}
 		if opt.userName != nil {
 			newOptions.userName = opt.userName

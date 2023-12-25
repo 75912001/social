@@ -58,8 +58,8 @@ func (p *Bus) OnEventEtcd(key string, value string) error {
 				friend.EtcdValueJson = etcdValueJson
 				return nil
 			}
-			//没有,链接,添加
-			... 链接 ...
+			// todo menglingchao 没有,链接,添加
+			//... 链接 ...
 
 			gate.friendMgr.Add(serverKey, &Friend{
 				key:           serverKey,

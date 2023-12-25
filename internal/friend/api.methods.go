@@ -5,6 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	liberror "social/lib/error"
+	liblog "social/lib/log"
 	libruntime "social/lib/runtime"
 	pkggrpcstream "social/pkg/grpcstream"
 	pkgmsg "social/pkg/msg"
@@ -59,23 +60,14 @@ func (s *APIServer) BidirectionalBinaryData(stream protofriend.Service_Bidirecti
 		header := &pkgmsg.Header{}
 		header.Unmarshal(data[:pkgmsg.GProtoHeadLength])
 		app.LogMgr.Trace(header.String())
-		if app.CanHandle(header.MessageID) {
-			err = app.Handle(stream, header, data[pkgmsg.GProtoHeadLength:])
-			if err != nil {
-				app.LogMgr.Warn(err, libruntime.Location())
-			}
+		if !app.CanHandle(header.MessageID) {
+			liblog.PrintErr(liberror.MessageIDNonExistent, libruntime.Location())
 			continue
 		}
-		//非gate的消息,交给router处理
-		user := app.userMgr.FindByStream(stream)
-		if user == nil { //未注册
-			app.LogMgr.Warn(liberror.Unregistered, libruntime.Location())
-			return errors.WithMessage(liberror.Unregistered, "user not registered")
-		}
-		err = app.router.Handle(user.key, stream, header, data)
+		err = app.Handle(stream, header, data[pkgmsg.GProtoHeadLength:])
 		if err != nil {
 			app.LogMgr.Warn(err, libruntime.Location())
+			continue
 		}
 	}
-	//return nil
 }
