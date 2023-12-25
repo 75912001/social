@@ -102,9 +102,12 @@ func (p *Options) genURI() string {
 	}
 	hostPort = strings.TrimRight(hostPort, ",")
 	//uri = fmt.Sprintf("mongodb://%v:%v@%v/%v?connect=automatic&replicaSet=replset", userName, pw, hostPort, dbName)
-	uri = fmt.Sprintf("mongodb://%v:%v@%v/%v?connect=automatic", userName, pw, hostPort, *p.dbName)
+	//uri = fmt.Sprintf("mongodb://%v:%v@%v/%v?connect=automatic", userName, pw, hostPort, *p.dbName)
 	//直连模式
 	//uri = fmt.Sprintf("mongodb://%v:%v@%v:%v/%v%v", userName, pw, ip, port, dbName, "?connect=direct")
+	_ = userName
+	_ = pw
+	uri = fmt.Sprintf("mongodb://localhost:27017")
 	return uri
 }
 
