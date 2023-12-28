@@ -4,12 +4,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type OnDefaultHandler func(v interface{}) error
+type OnDefaultHandler func(msg *Msg) error
 
 // Options contains Options to configure instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type Options struct {
-	onHandler OnDefaultHandler // default 处理函数
+	onHandler        OnDefaultHandler // default 处理函数
+	actorChannelSize *uint32          // actor channel 大小
 }
 
 // NewOptions 新的Options
@@ -19,6 +20,11 @@ func NewOptions() *Options {
 
 func (p *Options) WithDefaultHandler(defaultHandler OnDefaultHandler) *Options {
 	p.onHandler = defaultHandler
+	return p
+}
+
+func (p *Options) WithActorChannelSize(actorChannelSize uint32) *Options {
+	p.actorChannelSize = &actorChannelSize
 	return p
 }
 
@@ -34,6 +40,9 @@ func merge(opts ...*Options) *Options {
 		if opt.onHandler != nil {
 			so.onHandler = opt.onHandler
 		}
+		if opt.actorChannelSize != nil {
+			so.actorChannelSize = opt.actorChannelSize
+		}
 	}
 	return so
 }
@@ -42,6 +51,9 @@ func merge(opts ...*Options) *Options {
 func configure(opt *Options) error {
 	if opt.onHandler == nil {
 		return errors.WithMessage(errors.New("onHandler is nil"), "onHandler is nil")
+	}
+	if opt.actorChannelSize == nil {
+		return errors.WithMessage(errors.New("actorChannelSize is nil"), "actorChannelSize is nil")
 	}
 	return nil
 }

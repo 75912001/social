@@ -4,9 +4,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"runtime/debug"
-	libbench "social/lib/bench"
 	libconsts "social/lib/consts"
-	liberror "social/lib/error"
 	liblog "social/lib/log"
 	libruntime "social/lib/runtime"
 	libtime "social/lib/time"
@@ -20,9 +18,22 @@ type State struct {
 type Behavior struct {
 }
 
+func NewNormal[TKey comparable](ctx context.Context, key TKey, options ...*Options) *Normal[TKey] {
+	p := &Normal[TKey]{
+		key:      key,
+		state:    &State{},
+		behavior: &Behavior{},
+	}
+	err := p.start(ctx, options...)
+	if err != nil {
+		return nil
+	}
+	return p
+}
+
 type Normal[TKey comparable] struct {
 	key      TKey
-	options  *Options
+	options  *Options //包含一个处理协程
 	state    *State
 	behavior *Behavior
 
@@ -38,37 +49,61 @@ func (p *Normal[TKey]) GetKey() TKey {
 
 func (p *Normal[TKey]) handler() error {
 	var err error
-	for {
-		select {
-		case <-p.cancelCtx.Done():
-			return errors.WithMessagef(context.Canceled, "%v", p.GetKey())
-		case v, ok := <-p.mailBox:
-			if !ok {
-				return errors.WithMessagef(liberror.ChannelClosed, "%v", p.GetKey())
-			}
-			nowTime := libtime.NowTime()
-			liblog.GetInstance().Tracef("Actor %v received message: %v", p.GetKey(), v)
-			switch t := v.(type) {
-			case *Msg:
-				err = p.options.onHandler(t.unserializedPacket)
-			default:
-				liblog.PrintfErr("Actor %v received message: %v", p.GetKey(), v)
-			}
-			if err != nil {
-				liblog.PrintErr(v, err)
-			}
-			if libutil.IsDebug() {
-				dt := libtime.NowTime().Sub(nowTime).Milliseconds()
-				if dt > 50 {
-					liblog.GetInstance().Warnf("cost time50: %v Millisecond with event type:%T", dt, v)
-				} else if dt > 20 {
-					liblog.GetInstance().Warnf("cost time20: %v Millisecond with event type:%T", dt, v)
-				} else if dt > 10 {
-					liblog.GetInstance().Warnf("cost time10: %v Millisecond with event type:%T", dt, v)
-				}
+	for v := range p.mailBox {
+		nowTime := libtime.NowTime()
+		liblog.GetInstance().Tracef("Actor %v received message: %v", p.GetKey(), v)
+		switch t := v.(type) {
+		case *Msg:
+			err = p.options.onHandler(t)
+		default:
+			liblog.PrintfErr("Actor %v received message: %v", p.GetKey(), v)
+		}
+		if err != nil {
+			liblog.PrintErr(v, err)
+		}
+		if libutil.IsDebug() {
+			dt := libtime.NowTime().Sub(nowTime).Milliseconds()
+			if dt > 50 {
+				liblog.GetInstance().Warnf("cost time50: %v Millisecond with event type:%T", dt, v)
+			} else if dt > 20 {
+				liblog.GetInstance().Warnf("cost time20: %v Millisecond with event type:%T", dt, v)
+			} else if dt > 10 {
+				liblog.GetInstance().Warnf("cost time10: %v Millisecond with event type:%T", dt, v)
 			}
 		}
 	}
+	return nil
+	//for {
+	//	select {
+	//	case <-p.cancelCtx.Done():
+	//		return errors.WithMessagef(context.Canceled, "%v", p.GetKey())
+	//	case v, ok := <-p.mailBox:
+	//		if !ok {
+	//			return errors.WithMessagef(liberror.ChannelClosed, "%v", p.GetKey())
+	//		}
+	//		nowTime := libtime.NowTime()
+	//		liblog.GetInstance().Tracef("Actor %v received message: %v", p.GetKey(), v)
+	//		switch t := v.(type) {
+	//		case *Msg:
+	//			err = p.options.onHandler(t)
+	//		default:
+	//			liblog.PrintfErr("Actor %v received message: %v", p.GetKey(), v)
+	//		}
+	//		if err != nil {
+	//			liblog.PrintErr(v, err)
+	//		}
+	//		if libutil.IsDebug() {
+	//			dt := libtime.NowTime().Sub(nowTime).Milliseconds()
+	//			if dt > 50 {
+	//				liblog.GetInstance().Warnf("cost time50: %v Millisecond with event type:%T", dt, v)
+	//			} else if dt > 20 {
+	//				liblog.GetInstance().Warnf("cost time20: %v Millisecond with event type:%T", dt, v)
+	//			} else if dt > 10 {
+	//				liblog.GetInstance().Warnf("cost time10: %v Millisecond with event type:%T", dt, v)
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 func (p *Normal[TKey]) start(ctx context.Context, opts ...*Options) error {
@@ -80,7 +115,7 @@ func (p *Normal[TKey]) start(ctx context.Context, opts ...*Options) error {
 	ctxWithCancel, cancelFunc := context.WithCancel(ctx)
 	p.cancelCtx = ctxWithCancel
 	p.cancelFunc = cancelFunc
-	p.mailBox = make(chan IMsg, libbench.GetInstance().Base.ActorChannelNumber)
+	p.mailBox = make(chan IMsg, *p.options.actorChannelSize)
 	p.waitGroup.Add(1)
 	go func() {
 		defer func() {
@@ -103,6 +138,10 @@ func (p *Normal[TKey]) start(ctx context.Context, opts ...*Options) error {
 }
 
 func (p *Normal[TKey]) stop(_ context.Context) error {
+	if p.cancelFunc != nil {
+		p.cancelFunc()
+		p.cancelFunc = nil
+	}
 	liblog.GetInstance().Warnf("actor stop... %v", p.GetKey())
 	close(p.mailBox)
 	// 等待 goroutine退出. 阻塞等待mailBox的消息处理退出

@@ -2,11 +2,23 @@ package gate
 
 import (
 	"context"
+	"google.golang.org/grpc"
+	libactor "social/lib/actor"
 	libutil "social/lib/util"
+	"sync"
 )
+
+func (p *FriendMgr) SpawnFriend(key string, stream grpc.ServerStream) *Friend {
+	friend := &Friend{}
+	go friend.Service.OnBidirectionalRecv()
+
+	return nil
+}
 
 type FriendMgr struct {
 	*libutil.Mgr[string, *Friend]
+	actorMgr *libactor.Mgr[string] // e.g.:1.lp.1
+	lock     sync.RWMutex
 }
 
 // 获取一个可用的服务

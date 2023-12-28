@@ -46,53 +46,53 @@ func main() {
 		normal.ServiceID = uint32(strServiceID)
 	}
 	liblog.PrintInfo(normal.ZoneID, normal.ServiceName, normal.ServiceID)
-	var s pkgserver.IServer
+	var app pkgserver.IServer
 	switch normal.ServiceName {
 	case pkgserver.NameGate:
-		s = gate.NewGate(normal)
+		app = gate.NewGate(normal)
 	case pkgserver.NameFriend:
-		s = friend.NewFriend(normal)
+		app = friend.NewFriend(normal)
 	case pkgserver.NameInteraction:
-		s = &interactionserver.Server{Normal: normal}
+		app = &interactionserver.Server{Normal: normal}
 	case pkgserver.NameNotification:
-		s = &notificationserver.Server{Normal: normal}
+		app = &notificationserver.Server{Normal: normal}
 	case pkgserver.NameBlog:
-		s = &blogserver.Server{Normal: normal}
+		app = &blogserver.Server{Normal: normal}
 	case pkgserver.NameRecommendation:
-		s = &recommendationserver.Server{Normal: normal}
+		app = &recommendationserver.Server{Normal: normal}
 	case pkgserver.NameCleansing:
-		s = &cleansingserver.Server{Normal: normal}
+		app = &cleansingserver.Server{Normal: normal}
 	case pkgserver.NameRobot:
-		s = robot.NewRobot(normal)
+		app = robot.NewRobot(normal)
 	default:
 		liblog.PrintErr("service name err", normal.ServiceName)
 		return
 	}
-	err := s.OnLoadBench(context.Background(), normal.Options)
+	err := app.OnLoadBench(context.Background(), normal.Options)
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 	}
-	err = s.OnInit(context.Background(), normal.Options)
-	if err != nil {
-		liblog.PrintErr("service name err", normal.ServiceName, err)
-		return
-	}
-	err = s.OnStart(context.Background())
+	err = app.OnInit(context.Background(), normal.Options)
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.OnRun(context.Background())
+	err = app.OnStart(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.OnPreStop(context.Background())
+	err = app.OnRun(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return
 	}
-	err = s.OnStop(context.Background())
+	err = app.OnPreStop(context.Background())
+	if err != nil {
+		liblog.PrintErr("service name err", normal.ServiceName, err)
+		return
+	}
+	err = app.OnStop(context.Background())
 	if err != nil {
 		liblog.PrintErr("service name err", normal.ServiceName, err)
 		return

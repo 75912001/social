@@ -2,8 +2,8 @@ package gate
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	libruntime "social/lib/runtime"
 	pkgmsg "social/pkg/msg"
 	pkgproto "social/pkg/proto"

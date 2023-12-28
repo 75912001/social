@@ -4,6 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 	libactor "social/lib/actor"
+	libbench "social/lib/bench"
 	"sync"
 )
 
@@ -14,7 +15,7 @@ func (p *UserMgr) SpawnUser(key string, stream grpc.ServerStream) *User {
 		key:    key,
 		Stream: stream,
 	}
-	p.actorMgr.SpawnActor(context.Background(), key, libactor.NewOptions().WithDefaultHandler(user.OnHandler))
+	p.actorMgr.SpawnActor(context.Background(), key, libactor.NewOptions().WithDefaultHandler(user.OnHandler).WithActorChannelSize(libbench.GetInstance().Base.ActorChannelNumber))
 	p.userMap[key] = user
 	return user
 }

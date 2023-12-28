@@ -51,6 +51,11 @@ windows
     
     运行 social/scripts/proto/gen.sh
 
+## 将自定义标记注入到protobuf golang结构中:protoc-go-inject-tag
+    相关地址:https://github.com/favadi/protoc-go-inject-tag
+    安装命令:
+    go install github.com/favadi/protoc-go-inject-tag@latest
+
 ## etcd windows部署(单例)
 
     下载文件
@@ -67,6 +72,18 @@ windows
     删
     ./etcdctl --endpoints=127.0.0.1:2379 del --prefix xxxx
 
+## mongodb windows部署(社区版本)
+    社区版本:
+        https://www.mongodb.com/try/download/community
+        当前测试版本:7.0.4
+    shell:
+        https://www.mongodb.com/try/download/shell
+    若无法启动,可尝试
+        修改MongoDB服务的启动方式:
+        打开服务管理器,可以通过按Win + R,输入services.msc,然后按回车打开.
+        找到MongoDB相关的服务.MongoDB Server (MongoDB)
+        右键点击MongoDB服务,选择“属性”
+        在“登录”选项卡中,选择 "本地系统账户"
 
 # 目录说明
 

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option go_package = "social/pkg/proto/friend";
+
+import "friend.enum.proto";
+
+
+////////////////////////////////////////////////
+//mongodb 数据
+////////////////////////////////////////////////
+message MDBFriend
+{
+	// @gotags: bson:"friendUid"
+	uint64 friendUid = 1;// 好友的UID
+	// @gotags: bson:"friendshipTimestamp"
+	uint32 friendshipTimestamp = 2;// 好友关系建立时间
+	// @gotags: bson:"remark"
+	string remark = 3;// 备注
+	// @gotags: bson:"relationshipType"
+	FriendRelationshipType relationshipType = 4;// 关系类型
+	// @gotags: bson:"relationshipValue"
+	uint32 relationshipValue = 5;// 关系值
+	// @gotags: bson:"relationshipStatus"
+	FriendRelationshipStatus relationshipStatus = 6;// 关系状态
+}

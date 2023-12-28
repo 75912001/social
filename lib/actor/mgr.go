@@ -20,22 +20,13 @@ type Mgr[TKey comparable] struct {
 }
 
 // SpawnActor 创建一个新的 IActor 并添加到系统中
-func (p *Mgr[TKey]) SpawnActor(ctx context.Context, key TKey, opt *Options) {
+func (p *Mgr[TKey]) SpawnActor(ctx context.Context, key TKey, options ...*Options) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	normal := &Normal[TKey]{
-		key:      key,
-		options:  opt,
-		state:    &State{},
-		behavior: &Behavior{},
-	}
-	p.actorMap[key] = normal
+	normal := NewNormal(ctx, key, options...)
 
-	err := normal.start(ctx, opt)
-	if err != nil {
-		liblog.PrintfErr("IActor %v start failed err:%v", key, err)
-	}
+	p.actorMap[key] = normal
 }
 
 // DeleteActor 从系统中删除指定的 IActor
@@ -44,10 +35,6 @@ func (p *Mgr[TKey]) DeleteActor(ctx context.Context, key TKey) {
 	defer p.lock.Unlock()
 
 	if actor, ok := p.actorMap[key]; ok {
-		if actor.cancelFunc != nil {
-			actor.cancelFunc()
-			actor.cancelFunc = nil
-		}
 		_ = actor.stop(ctx)
 		delete(p.actorMap, key)
 	}

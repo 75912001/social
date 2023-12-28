@@ -7,43 +7,47 @@ import (
 	"net"
 	"runtime"
 	"runtime/debug"
-	"social/lib/actor"
 	libconsts "social/lib/consts"
+	libpb "social/lib/pb"
 	libutil "social/lib/util"
 	protogate "social/pkg/proto/gate"
 	pkgserver "social/pkg/server"
 )
 
 var (
-	gate *Gate
+	app *Gate
 )
 
 func NewGate(normal *pkgserver.Normal) *Gate {
-	gate = &Gate{
+	app = &Gate{
 		Normal: normal,
 	}
+	app.userPBFunMgr.Init()
+
 	normal.Options.
-		WithDefaultHandler(gate.bus.OnEventBus).
-		WithEtcdHandler(gate.bus.OnEventEtcd).
+		WithDefaultHandler(app.bus.OnEventBus).
+		WithEtcdHandler(app.bus.OnEventEtcd).
 		WithTimerEachSecond(&pkgserver.NormalTimerSecond{
-			OnTimerFun: gate.OnTimerEachSecondFun,
-			Arg:        gate,
+			OnTimerFun: app.OnTimerEachSecondFun,
+			Arg:        app,
 		}).
 		WithTimerEachDay(&pkgserver.NormalTimerSecond{
-			OnTimerFun: gate.OnTimerEachDayFun,
-			Arg:        gate,
+			OnTimerFun: app.OnTimerEachDayFun,
+			Arg:        app,
 		})
-	gate.userMgr.actorMgr = actor.NewMgr[string]()
-	gate.friendMgr.Mgr = libutil.NewMgr[string, *Friend]()
-	return gate
+	app.userMgr = NewUserMgr()
+	app.friendMgr.Mgr = libutil.NewMgr[string, *Friend]()
+
+	return app
 }
 
 type Gate struct {
 	*pkgserver.Normal
-	bus       Bus
-	router    Router
-	userMgr   UserMgr
-	friendMgr FriendMgr
+	userPBFunMgr libpb.Mgr
+	bus          Bus
+	router       Router
+	userMgr      *UserMgr
+	friendMgr    FriendMgr
 }
 
 func (p *Gate) String() string {

@@ -11,4 +11,5 @@ type IMsg interface {
 // Msg 是 IMsg 的实现
 type Msg struct {
 	unserializedPacket libpb.UnserializedPacket
+	obj                interface{}
 }

@@ -1,7 +1,7 @@
 package pb
 
 import (
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // UnserializedPacket 未序列化的数据包

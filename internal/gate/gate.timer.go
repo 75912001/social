@@ -9,17 +9,17 @@ import (
 var timerAvailableLoadExpireTimestamp int64 //到期-时间戳
 // 定时器-可用负载
 func onTimerAvailableLoad(_ interface{}) {
-	if timerAvailableLoadExpireTimestamp <= gate.TimeMgr.ShadowTimeSecond() { //更新load
+	if timerAvailableLoadExpireTimestamp <= app.TimeMgr.ShadowTimeSecond() { //更新load
 		timerAvailableLoadExpireTimestamp += 60
-		gate.BenchMgr.Etcd.Value.AvailableLoad = pkgserver.AvailableLoad()
-		v, err := json.Marshal(gate.BenchMgr.Etcd.Value)
+		app.BenchMgr.Etcd.Value.AvailableLoad = pkgserver.AvailableLoad()
+		v, err := json.Marshal(app.BenchMgr.Etcd.Value)
 		if err != nil {
-			gate.LogMgr.Warnf("OnEventEtcd value json Marshal err:%v", err)
+			app.LogMgr.Warnf("OnEventEtcd value json Marshal err:%v", err)
 			return
 		}
-		putResponse, err := gate.EtcdMgr.PutWithLease(context.Background(), gate.BenchMgr.Etcd.Key, string(v))
+		putResponse, err := app.EtcdMgr.PutWithLease(context.Background(), app.BenchMgr.Etcd.Key, string(v))
 		if err != nil {
-			gate.LogMgr.Warn(putResponse, err)
+			app.LogMgr.Warn(putResponse, err)
 		}
 	}
 }

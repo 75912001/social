@@ -2,17 +2,18 @@ package gate
 
 import (
 	"fmt"
-	"google.golang.org/grpc"
-	libbench "social/lib/bench"
 	pkgserver "social/pkg/server"
+	pkgservice "social/pkg/service"
 )
 
 type Friend struct {
-	key           string
-	Stream        grpc.ServerStream
-	EtcdValueJson libbench.EtcdValueJson
+	*pkgservice.Service
 }
 
 func (p *Friend) String() string {
 	return fmt.Sprintf("%v", pkgserver.NameFriend)
+}
+
+func (p *Friend) OnRecv() {
+
 }

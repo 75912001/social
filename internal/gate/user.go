@@ -1,7 +1,9 @@
 package gate
 
 import (
+	"fmt"
 	"google.golang.org/grpc"
+	libactor "social/lib/actor"
 )
 
 // User 用户
@@ -10,7 +12,11 @@ type User struct {
 	Stream grpc.ServerStream
 }
 
-// OnHandler 处理收到的消息
-func (p *User) OnHandler(v interface{}) error {
+func (p *User) String() string {
+	return fmt.Sprintf("%v", p.key)
+}
+
+// OnMailBox 处理收到的消息
+func (p *User) OnMailBox(msg *libactor.Msg) error {
 	return nil
 }

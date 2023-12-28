@@ -1,8 +1,9 @@
 package gate
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	libruntime "social/lib/runtime"
 	pkgmsg "social/pkg/msg"
 	pkgproto "social/pkg/proto"
@@ -21,4 +22,15 @@ func send2User(stream protogate.GateService_BidirectionalBinaryDataServer, cmd u
 		return errors.WithMessage(err, libruntime.Location())
 	}
 	return nil
+}
+
+// 总线-用户管理器-添加用户
+type busUserMgrAddUser struct {
+	key    string
+	stream grpc.ServerStream
+}
+
+type busUserMgrDelUser struct {
+	key    string
+	stream grpc.ServerStream
 }

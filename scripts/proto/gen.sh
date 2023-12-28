@@ -18,8 +18,13 @@ protoc --go_out=../../ friend.message.proto
 protoc --go_out=../../ friend.enum.proto
 protoc --go_out=../../ friend.struct.proto
 protoc --go_out=../../ friend.server.proto
+protoc --go_out=../../ friend.mdb.proto
 protoc --go-grpc_out=../../ friend.server.proto
+cd - || exit
 
+#生成 go inject tag 文件
+cd ../../pkg/proto/friend || exit
+protoc-go-inject-tag -input=friend.mdb.pb.go
 cd - || exit
 
 #生成 pkg/ec/ec.go 文件
